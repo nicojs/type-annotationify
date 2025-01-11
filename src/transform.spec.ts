@@ -15,7 +15,7 @@ describe('transform', async () => {
             constructor(bankCode: string) {}
             }
             `,
-            false,
+      false,
     );
   });
   it('should transform a parameter property', async () => {
@@ -31,10 +31,39 @@ describe('transform', async () => {
     }`,
     );
   });
+  it.only('should transform a parameter property deeper in the AST', async () => {
+    await scenario(
+      `
+      function foo() {
+          class Bar {
+            doSomething() {
+              class Iban {
+                  constructor(public bankCode: string) {}
+                  }
+            }
+          }
+      }
+            `,
+      `
+      function foo() {
+          class Bar {
+            doSomething() {
+              class Iban {
+                public bankCode;
+                constructor(bankCode: string) {
+                  this.bankCode = bankCode;
+                }
+              }
+            }
+          }
+      }
+      }`,
+    );
+  });
   async function scenario(
     input: string,
     expectedOutput = input,
-    expectedChanged = input === expectedOutput,
+    expectedChanged = input !== expectedOutput,
   ) {
     const source = parse(input);
     const expected = parse(expectedOutput);

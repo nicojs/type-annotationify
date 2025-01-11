@@ -23,9 +23,9 @@
       "outputCapture": "std"
     },
     {
-      "name": "🧪 Test current",
+      "name": "🧪 Test transform.spec.ts",
       "args": ["src/transform.spec.ts"],
-      "runtimeArgs": ["--experimental-strip-types", "--test-only"],
+      "runtimeArgs": ["--experimental-strip-types"],
       "request": "launch",
       "skipFiles": ["<node_internals>/**"],
       "type": "node",
