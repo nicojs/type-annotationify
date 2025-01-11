@@ -13,11 +13,12 @@ This is a simple tool to migrate full-fledged TypeScript code to type-annotated 
 
 | Syntax                                      | Status | Notes                                                              |
 | ------------------------------------------- | ------ | ------------------------------------------------------------------ |
-| Class Properties                            | ✅     |                                                                    |
-| Class Properties with `super()` call        | ❌     |                                                                    |
+| Parameter Properties                        | ✅     |                                                                    |
+| Parameter Properties with `super()` call    | ❌     |                                                                    |
 | Plain Enum                                  | ❌     |                                                                    |
 | Number Enum                                 | ❌     |                                                                    |
 | String Enum                                 | ❌     |                                                                    |
+| Type assertion expressions                  | ❌     | I.e. `<string>value` --> `value as string`                         |
 | Namespaces                                  | ❌     | This might turn out to be impossible to do, to be investigated     |
 | Rewrite file extensions in import specifier | ❌     | This might be included with an option in the future With an option |
 
