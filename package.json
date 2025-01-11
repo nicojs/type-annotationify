@@ -6,7 +6,17 @@
   "author": "nicojs",
   "type": "module",
   "main": "dist/main.js",
-  "files": ["dist", "!dist/**/*.spec.js?(.map)"],
+  "keywords": [
+    "typescript",
+    "type-annotations",
+    "strip-types",
+    "transform",
+    "experimental-strip-types"
+  ],
+  "files": [
+    "dist",
+    "!dist/**/*.spec.js?(.map)"
+  ],
   "engines": {
     "node": ">=22"
   },
