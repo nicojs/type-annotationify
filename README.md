@@ -11,24 +11,26 @@ This is a simple tool to migrate full-fledged TypeScript code to type-annotated 
 
 👷‍♂️ Work in progress. This tool is still in development, and not all syntax transformations are supported yet.
 
-| Syntax                                      | Status | Notes                                                              |
-| ------------------------------------------- | ------ | ------------------------------------------------------------------ |
-| Parameter Properties                        | ✅     |                                                                    |
-| Parameter Properties with `super()` call    | ✅     |                                                                    |
-| Plain Enum                                  | ✅     | See [#3](https://github.com/nicojs/type-annotationify/issues/3)    |
-| Number Enum                                 | ❌     |                                                                    |
-| String Enum                                 | ❌     |                                                                    |
-| Const Enum                                  | ❌     |                                                                    |
-| Type assertion expressions                  | ❌     | I.e. `<string>value` --> `value as string`                         |
-| Namespaces                                  | ❌     | This might turn out to be impossible to do, to be investigated     |
-| Rewrite file extensions in import specifier | ❌     | This might be included with an option in the future With an option |
+| Syntax                                      | Status | Notes                                                              | Known issues                                                  |
+| ------------------------------------------- | ------ | ------------------------------------------------------------------ | ------------------------------------------------------------- |
+| Parameter Properties                        | ✅     |                                                                    |                                                               |
+| Parameter Properties with `super()` call    | ✅     |                                                                    |                                                               |
+| Plain Enum                                  | ✅\*   | See [#8](https://github.com/nicojs/type-annotationify/pull/8)      | [#10](https://github.com/nicojs/type-annotationify/issues/10) |
+| Number Enum                                 | ❌     |                                                                    |                                                               |
+| String Enum                                 | ❌     |                                                                    |                                                               |
+| Const Enum                                  | ❌     |                                                                    |                                                               |
+| Type assertion expressions                  | ❌     | I.e. `<string>value` --> `value as string`                         |                                                               |
+| Namespaces                                  | ❌     | This might turn out to be impossible to do, to be investigated     |                                                               |
+| Rewrite file extensions in import specifier | ❌     | This might be included with an option in the future With an option |                                                               |
+
+\* Supported with some known issues
 
 ## Installation
 
 ```bash
-npm install -g type-annotationify
+npm install -g type-annotationify@latest
 # OR simply run directly with
-npx type-annotationify
+npx type-annotationify@latest
 ```
 
 ## Usage
