@@ -16,9 +16,9 @@ export async function runTypeAnnotationify(args: string[]) {
       (async () => {
         const content = await fs.readFile(file, 'utf-8');
         const sourceFile = parse(file, content);
-        const { source, changed } = transform(sourceFile);
+        const { node, changed } = transform(sourceFile);
         if (changed) {
-          const transformedContent = print(source);
+          const transformedContent = print(node);
           await fs.writeFile(file, transformedContent);
           console.log(`✅ (changed) ${file}`);
         } else {

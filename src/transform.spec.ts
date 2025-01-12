@@ -61,6 +61,36 @@ describe('transform', async () => {
       );
     });
 
+    await it('should support a class inside a class', async () => {
+      await scenario(
+        `class Iban {
+           constructor(public bankCode: string) {}
+
+           doWork() {
+             class Bic {
+               constructor(public bic: string) {}
+
+            }
+          }
+         }`,
+        `class Iban {
+           public bankCode;
+           constructor(bankCode: string) {
+             this.bankCode = bankCode;
+           }
+
+           doWork() {
+             class Bic {
+               public bic;
+               constructor(bic: string) {
+                  this.bic = bic;
+               }
+             }
+           }
+         }`,
+      );
+    });
+
     await it('should transform multiple parameter properties', async () => {
       await scenario(
         `class Iban {
@@ -133,6 +163,38 @@ describe('transform', async () => {
     });
   });
 
+  describe('enums', async () => {
+    await it('should transform a plain enum', async () => {
+      await scenario(
+        'enum MessageKind { Start, Work, Stop }',
+        `type MessageKind = 0 | 1 | 2;
+         type MessageKindKeys = 'Start' | 'Work' | 'Stop';
+         const MessageKind = {
+          0: 'Start',
+          1: 'Work',
+          2: 'Stop',
+          Start: 0,
+          Work: 1,
+          Stop: 2
+          } satisfies Record<MessageKind, MessageKindKeys> & Record<MessageKindKeys, MessageKind>;`,
+      );
+    });
+
+    await it('should not transform an initialized number enum (yet)', async () => {
+      await scenario('enum MessageKind { Start = 1, Work, Stop }');
+    });
+    await it('should not transform a string enum (yet)', async () => {
+      await scenario(
+        'enum MessageKind { Start = "start", Work = "work", Stop = "stop" }',
+      );
+    });
+    await it('should not transform a computed property name enum (yet)', async () => {
+      await scenario(
+        'enum MessageKind { ["▶"]: "Start", ["👷‍♂️"]: "Work", ["🛑"]: "Stop" }',
+      );
+    });
+  });
+
   async function scenario(
     input: string,
     expectedOutput = input,
@@ -142,7 +204,7 @@ describe('transform', async () => {
     const expected = parse(expectedOutput);
     const actualTransformResult = transform(source);
     const actualCode = await prettier.format(
-      printer.printFile(actualTransformResult.source),
+      printer.printFile(actualTransformResult.node),
       {
         filepath: IMAGINARY_FILE_NAME,
       },
@@ -150,7 +212,11 @@ describe('transform', async () => {
     const expectedCode = await prettier.format(printer.printFile(expected), {
       filepath: IMAGINARY_FILE_NAME,
     });
-    assert.equal(actualTransformResult.changed, expectedChanged);
+    assert.equal(
+      actualTransformResult.changed,
+      expectedChanged,
+      `Expected input to be changed, but wasn't: \`${input}\``,
+    );
     assert.deepEqual(actualCode, expectedCode);
   }
 });
