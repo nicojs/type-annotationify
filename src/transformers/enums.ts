@@ -10,14 +10,21 @@ export function transformEnum(
   }
 
   // TODO: Implement enums with computed property names
-  if (enumDeclaration.members.some((member) => ts.isComputedPropertyName(member.name))) {
+  if (
+    enumDeclaration.members.some((member) =>
+      ts.isComputedPropertyName(member.name),
+    )
+  ) {
     return { changed: false, node: [enumDeclaration] as const };
   }
 
   const enumMap = new Map(
     enumDeclaration.members.map((member, index) => [member, index] as const),
   );
-  const keysUnion = `${enumDeclaration.name.text}Keys`;
+  const keysUnion = ts.factory.createUniqueName(
+    `${enumDeclaration.name.text}Keys`,
+    ts.GeneratedIdentifierFlags.Optimistic
+  );
   return {
     changed: true,
     node: [
@@ -35,7 +42,7 @@ export function transformEnum(
       ),
       ts.factory.createTypeAliasDeclaration(
         undefined,
-        ts.factory.createIdentifier(keysUnion),
+        keysUnion,
         undefined,
         ts.factory.createUnionTypeNode(
           enumDeclaration.members.map((member) => {

@@ -179,6 +179,20 @@ describe('transform', async () => {
           } satisfies Record<MessageKind, MessageKindKeys> & Record<MessageKindKeys, MessageKind>;`,
       );
     });
+    await it('should use unique name for the keys enum', async () => {
+      await scenario(
+        `enum MessageKind { Start }; 
+         let MessageKindKeys = 0;
+         `,
+        `type MessageKind = 0;
+         type MessageKindKeys_1 = 'Start';
+         const MessageKind = {
+          0: 'Start',
+          Start: 0
+          } satisfies Record<MessageKind, MessageKindKeys_1> & Record<MessageKindKeys_1, MessageKind>;
+         let MessageKindKeys = 0;`,
+      );
+    });
 
     await it('should not transform an initialized number enum (yet)', async () => {
       await scenario('enum MessageKind { Start = 1, Work, Stop }');
