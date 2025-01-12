@@ -5,35 +5,37 @@ import * as prettier from 'prettier';
 import { describe, it } from 'node:test';
 
 describe('transform', async () => {
-  it('should not change unrelated TS code', async () => {
+  await it('should not change unrelated TS code', async () => {
     await scenario(
       `class Iban {
-            constructor(bankCode: string) {}
-            }`,
+          constructor(bankCode: string) {}
+          }`,
       `
-      class Iban {
-            constructor(bankCode: string) {}
-            }
-            `,
+    class Iban {
+          constructor(bankCode: string) {}
+          }
+          `,
       false,
     );
   });
-  it('should transform a parameter property', async () => {
-    await scenario(
-      `class Iban {
+  describe('parameter properties', async () => {
+    await it('should transform a parameter property', async () => {
+      await scenario(
+        `class Iban {
             constructor(public bankCode: string) {}
             }`,
-      `class Iban {
+        `class Iban {
             public bankCode;
             constructor(bankCode: string) {
               this.bankCode = bankCode;
             }
     }`,
-    );
-  });
-  it('should transform a parameter property deeper in the AST', async () => {
-    await scenario(
-      `
+      );
+    });
+
+    await it('should transform a parameter property deeper in the AST', async () => {
+      await scenario(
+        `
       function foo() {
           class Bar {
             doSomething() {
@@ -42,9 +44,8 @@ describe('transform', async () => {
                   }
             }
           }
-      }
-            `,
-      `
+      }`,
+        `
       function foo() {
           class Bar {
             doSomething() {
@@ -56,10 +57,82 @@ describe('transform', async () => {
               }
             }
           }
-      }
       }`,
-    );
+      );
+    });
+
+    await it('should transform multiple parameter properties', async () => {
+      await scenario(
+        `class Iban {
+              constructor(public bankCode: string, public bic: string) {}
+              }`,
+        `class Iban {
+              public bankCode;
+              public bic;
+              constructor(bankCode: string, bic: string) {
+                this.bankCode = bankCode;
+                this.bic = bic;
+              }
+          }`,
+      );
+    });
+
+    await it('should support a constructor with a super() call', async () => {
+      await scenario(
+        `class Iban extends Base {
+              constructor(public bankCode: string) {
+                super();
+              }
+         }`,
+        `class Iban extends Base {
+              public bankCode;
+              constructor(bankCode: string) {
+                super();
+                this.bankCode = bankCode;
+              }
+          }`,
+      );
+    });
+    await it('should support a constructor with a super() call with parameters', async () => {
+      await scenario(
+        `class Iban extends Base {
+              constructor(public bankCode: string, bic: string) {
+                super(bic);
+              }
+         }`,
+        `class Iban extends Base {
+              public bankCode;
+              constructor(bankCode: string, bic: string) {
+                super(bic);
+                this.bankCode = bankCode;
+              }
+          }`,
+      );
+    });
+    await it('should support a constructor with statements before the super() call', async () => {
+      await scenario(
+        `class Iban extends Base {
+              constructor(public bankCode: string) {
+                console.log('foo');
+                console.log('bar');
+                super();
+                console.log('baz');
+              }
+         }`,
+        `class Iban extends Base {
+              public bankCode;
+              constructor(bankCode: string) {
+                console.log('foo');
+                console.log('bar');
+                super();
+                this.bankCode = bankCode;
+                console.log('baz');
+              }
+          }`,
+      );
+    });
   });
+
   async function scenario(
     input: string,
     expectedOutput = input,
