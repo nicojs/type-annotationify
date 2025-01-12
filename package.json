@@ -23,7 +23,7 @@
   },
   "scripts": {
     "clean": "rm -rf dist *.tsbuildinfo",
-    "all": "npm run format && && npm run build && npm run test",
+    "all": "npm run format && npm run build && npm run test",
     "format:fix": "npm run format -- --write",
     "format": "prettier --check src/**/*.ts README.md",
     "build": "tsc -b",
