@@ -31,7 +31,7 @@ describe('transform', async () => {
     }`,
     );
   });
-  it.only('should transform a parameter property deeper in the AST', async () => {
+  it('should transform a parameter property deeper in the AST', async () => {
     await scenario(
       `
       function foo() {
