@@ -1,6 +1,6 @@
 {
   "name": "type-annotationify",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Convert TS to Type-Annotation-only-TS",
   "license": "Apache-2.0",
   "author": "nicojs",
@@ -22,9 +22,11 @@
     "node": ">=22"
   },
   "scripts": {
-    "all": "npm run format && npm run test",
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "all": "npm run format && npm run build && npm run test",
     "format:fix": "npm run format -- --write",
     "format": "prettier --check src/**/*.ts README.md",
+    "build": "tsc -b",
     "test": "node --test --experimental-strip-types --test-reporter=spec src/**/*.spec.ts"
   },
   "dependencies": {
