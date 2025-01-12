@@ -6,7 +6,9 @@
   "author": "nicojs",
   "type": "module",
   "main": "dist/main.js",
-  "bin": "bin/type-annotationify.js",
+  "bin": {
+    "type-annotationify": "bin/type-annotationify.js"
+  },
   "keywords": [
     "typescript",
     "type-annotations",
