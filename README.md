@@ -14,7 +14,7 @@ This is a simple tool to migrate full-fledged TypeScript code to type-annotated 
 | Syntax                                      | Status | Notes                                                              |
 | ------------------------------------------- | ------ | ------------------------------------------------------------------ |
 | Parameter Properties                        | ✅     |                                                                    |
-| Parameter Properties with `super()` call    | ❌     |                                                                    |
+| Parameter Properties with `super()` call    | ✅     |                                                                    |
 | Plain Enum                                  | ❌     |                                                                    |
 | Number Enum                                 | ❌     |                                                                    |
 | String Enum                                 | ❌     |                                                                    |

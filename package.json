@@ -1,6 +1,6 @@
 {
   "name": "type-annotationify",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Convert TS to Type-Annotation-only-TS",
   "license": "Apache-2.0",
   "author": "nicojs",
