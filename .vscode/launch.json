@@ -16,7 +16,7 @@
     {
       "name": "🧪 Test transform.spec.ts (only)",
       "args": ["src/transform.spec.ts"],
-      "runtimeArgs": ["--experimental-strip-types", "--test-only"],
+      "runtimeArgs": ["--experimental-strip-types", "--test-only", "--test-reporter=spec"],
       "request": "launch",
       "skipFiles": ["<node_internals>/**"],
       "type": "node",
@@ -25,7 +25,7 @@
     {
       "name": "🧪 Test transform.spec.ts",
       "args": ["src/transform.spec.ts"],
-      "runtimeArgs": ["--experimental-strip-types"],
+      "runtimeArgs": ["--experimental-strip-types", "--test-reporter=spec"],
       "request": "launch",
       "skipFiles": ["<node_internals>/**"],
       "type": "node",

@@ -52,13 +52,26 @@ export function transform(source: ts.SourceFile): TransformResult {
               if (!ts.isConstructorDeclaration(member)) {
                 return member;
               }
+
+              const statements: readonly ts.Statement[] =
+                member.body?.statements || [];
+
+              const indexOfSuperCall = statements.findIndex(
+                (statement) =>
+                  ts.isExpressionStatement(statement) &&
+                  ts.isCallExpression(statement.expression) &&
+                  statement.expression.expression.kind ===
+                    ts.SyntaxKind.SuperKeyword,
+              );
+
               return ts.factory.updateConstructorDeclaration(
                 member,
                 member.modifiers,
                 removeModifiersFromProperties(member.parameters),
                 ts.factory.createBlock([
+                  ...statements.slice(0, indexOfSuperCall + 1),
                   ...toPropertyInitializers(constructorParameterProperties),
-                  ...(member.body ? member.body.statements : []),
+                  ...statements.slice(indexOfSuperCall + 1),
                 ]),
               );
             }),

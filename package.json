@@ -25,7 +25,7 @@
     "all": "npm run format && npm run test",
     "format:fix": "npm run format -- --write",
     "format": "prettier --check src/**/*.ts README.md",
-    "test": "node --test --experimental-strip-types src/**/*.spec.ts"
+    "test": "node --test --experimental-strip-types --test-reporter=spec src/**/*.spec.ts"
   },
   "dependencies": {
     "typescript": "^5.7.3"
