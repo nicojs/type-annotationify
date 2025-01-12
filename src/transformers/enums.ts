@@ -23,7 +23,7 @@ export function transformEnum(
   );
   const keysUnion = ts.factory.createUniqueName(
     `${enumDeclaration.name.text}Keys`,
-    ts.GeneratedIdentifierFlags.Optimistic
+    ts.GeneratedIdentifierFlags.Optimistic,
   );
   return {
     changed: true,
