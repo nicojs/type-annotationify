@@ -1,4 +1,4 @@
-[![Mutation testing badge](https://img.shields.io/endpoint?style=flat&url=https%3A%2F%2Fbadge-api.stryker-mutator.io%2Ftype-annotationify)](https://dashboard.stryker-mutator.io/reports/type-annotationify)
+[![Mutation testing badge](https://img.shields.io/endpoint?style=flat&url=https%3A%2F%2Fbadge-api.stryker-mutator.io%2Fgithub.com%2Fnicojs%2Ftype-annotationify%2Fmain)](https://dashboard.stryker-mutator.io/reports/github.com/nicojs/type-annotationify/main)
 
 # Type Annotationify
 
