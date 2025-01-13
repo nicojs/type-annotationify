@@ -1,3 +1,6 @@
 /dist
 /node_modules
 *.tsbuildinfo
+# stryker temp files
+.stryker-tmp
+/reports
