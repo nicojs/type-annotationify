@@ -29,12 +29,14 @@
     "format:fix": "npm run format -- --write",
     "format": "prettier --check src/**/*.ts README.md",
     "build": "tsc -b",
-    "test": "node --test --experimental-strip-types --test-reporter=spec src/**/*.spec.ts"
+    "test": "node --test --experimental-strip-types --test-reporter=spec src/**/*.spec.ts",
+    "test:mutation": "stryker run"
   },
   "dependencies": {
     "typescript": "^5.7.3"
   },
   "devDependencies": {
+    "@stryker-mutator/tap-runner": "^8.7.1",
     "@types/node": "^22.10.5",
     "prettier": "^3.4.2"
   }
