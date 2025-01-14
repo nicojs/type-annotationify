@@ -84,7 +84,7 @@ function toClassProperties(parameterProperties: ts.ParameterDeclaration[]) {
       (param.name as ts.Identifier).text,
       param.questionToken,
       /* type */ undefined,
-      param.initializer,
+      /* initializer */ undefined,
     );
   });
 }

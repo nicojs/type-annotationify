@@ -28,6 +28,7 @@ export function transformEnum(
   return {
     changed: true,
     node: [
+      // Type alias for values: type MessageKind = 0 | 1 | 2;
       ts.factory.createTypeAliasDeclaration(
         enumDeclaration.modifiers,
         enumDeclaration.name,
@@ -40,6 +41,7 @@ export function transformEnum(
           ),
         ),
       ),
+      // Type alias for keys: type MessageKindKeys = 'Start' | 'Work' | 'Stop';
       ts.factory.createTypeAliasDeclaration(
         undefined,
         keysUnion,
@@ -55,6 +57,7 @@ export function transformEnum(
           }),
         ),
       ),
+      // Object literal: const MessageKind = { 0: 'Start', 1: 'Work', 2: 'Stop', Start: 0, Work: 1, Stop: 2 };
       ts.factory.createVariableStatement(
         enumDeclaration.modifiers,
         ts.factory.createVariableDeclarationList(
@@ -91,7 +94,7 @@ export function transformEnum(
                   ],
                   true,
                 ),
-                // satisfies...
+                // Tag with satisfies: Record<MessageKind, MessageKindKeys> & Record<MessageKindKeys, MessageKind>;
                 ts.factory.createIntersectionTypeNode([
                   ts.factory.createTypeReferenceNode('Record', [
                     ts.factory.createTypeReferenceNode(enumDeclaration.name),
@@ -108,6 +111,34 @@ export function transformEnum(
           ],
           ts.NodeFlags.Const,
         ),
+      ),
+      // Finish with the namespace declaration: declare namespace MessageKind { type Start = typeof MessageKind.Start; ... }
+      ts.factory.createModuleDeclaration(
+        [
+          ...(enumDeclaration.modifiers ? enumDeclaration.modifiers : []),
+          ts.factory.createModifier(ts.SyntaxKind.DeclareKeyword),
+        ],
+        enumDeclaration.name,
+        ts.factory.createModuleBlock(
+          enumDeclaration.members.map((member) => {
+            if (ts.isComputedPropertyName(member.name)) {
+              throw new Error('Computed property names are not supported yet');
+            }
+            const enumKey = ts.factory.createIdentifier(member.name.text);
+            return ts.factory.createTypeAliasDeclaration(
+              undefined,
+              enumKey,
+              undefined,
+              ts.factory.createTypeQueryNode(
+                ts.factory.createQualifiedName(
+                  ts.factory.createIdentifier(enumDeclaration.name.text),
+                  enumKey,
+                ),
+              ),
+            );
+          }),
+        ),
+        ts.NodeFlags.Namespace,
       ),
     ],
   };
