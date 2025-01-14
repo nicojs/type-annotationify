@@ -18,7 +18,7 @@ This is a simple tool to migrate full-fledged TypeScript code to type-annotated 
 | Parameter Properties                        | ✅     | [See limitations](#parameter-property-transformation-limitations) |
 | Parameter Properties with `super()` call    | ✅     | [See limitations](#parameter-property-transformation-limitations) |
 | Plain Enum                                  | ✅     | [See limitations](#enum-transformation-limitations)               |
-| Number Enum                                 | ❌     |                                                                   |
+| Number Enum                                 | ✅     | [See limitations](#enum-transformation-limitations)               |
 | String Enum                                 | ❌     |                                                                   |
 | Const Enum                                  | ❌     |                                                                   |
 | Type assertion expressions                  | ❌     | I.e. `<string>value` --> `value as string`                        |
