@@ -61,6 +61,35 @@ describe('transform', async () => {
       );
     });
 
+    await it('should move any initializer to the parameter', async () => {
+      await scenario(
+        `
+        class Foo {
+          constructor(
+            public bar: string,
+            readonly baz: boolean,
+            protected qux = 42,
+          ) {}
+        }`,
+        `
+        class Foo {
+          public bar;
+          readonly baz;
+          protected qux;
+          constructor(
+            bar: string,
+            baz: boolean,
+            qux = 42,
+          ) {
+            this.bar = bar;
+            this.baz = baz;
+            this.qux = qux;
+          }
+        }
+      `,
+      );
+    });
+
     await it('should support a class inside a class', async () => {
       await scenario(
         `class Iban {
@@ -176,7 +205,12 @@ describe('transform', async () => {
           Start: 0,
           Work: 1,
           Stop: 2
-          } satisfies Record<MessageKind, MessageKindKeys> & Record<MessageKindKeys, MessageKind>;`,
+          } satisfies Record<MessageKind, MessageKindKeys> & Record<MessageKindKeys, MessageKind>;
+          declare namespace MessageKind {
+            type Start = typeof MessageKind.Start;
+            type Work = typeof MessageKind.Work;
+            type Stop = typeof MessageKind.Stop;
+          }`,
       );
     });
     await it('should use unique name for the keys enum', async () => {
@@ -190,7 +224,24 @@ describe('transform', async () => {
           0: 'Start',
           Start: 0
           } satisfies Record<MessageKind, MessageKindKeys_1> & Record<MessageKindKeys_1, MessageKind>;
+          declare namespace MessageKind {
+            type Start = typeof MessageKind.Start;
+          }
          let MessageKindKeys = 0;`,
+      );
+    });
+    await it('should transform an exported enum', async () => {
+      await scenario(
+        'export enum MessageKind { Start }',
+        `export type MessageKind = 0;
+         type MessageKindKeys = 'Start';
+         export const MessageKind = {
+          0: 'Start',
+          Start: 0,
+          } satisfies Record<MessageKind, MessageKindKeys> & Record<MessageKindKeys, MessageKind>;
+          export declare namespace MessageKind {
+            type Start = typeof MessageKind.Start;
+          }`,
       );
     });
 
@@ -203,9 +254,7 @@ describe('transform', async () => {
       );
     });
     await it('should not transform a computed property name enum (yet)', async () => {
-      await scenario(
-        'enum MessageKind { ["▶"]: "Start", ["👷‍♂️"]: "Work", ["🛑"]: "Stop" }',
-      );
+      await scenario('enum MessageKind { ["▶"], ["👷‍♂️"], ["🛑"] }');
     });
   });
 
