@@ -368,9 +368,26 @@ await describe('transform', async () => {
       `,
       );
     });
-  });
 
-  
+    await it('should support const enums', async () => {
+      await scenario(
+        'const enum Foo { Bar, Baz }',
+        `type Foo = 0 | 1;
+         type FooKeys = 'Bar' | 'Baz';
+         const Foo = {
+           0: 'Bar',
+           1: 'Baz',
+           Bar: 0,
+           Baz: 1,
+         } satisfies Record<Foo, FooKeys> & Record<FooKeys, Foo>;
+         declare namespace Foo {
+           type Bar = typeof Foo.Bar;
+           type Baz = typeof Foo.Baz;
+         }
+         `,
+      );
+    });
+  });
 });
 
 async function scenario(

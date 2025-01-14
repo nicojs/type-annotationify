@@ -90,7 +90,7 @@ function createModuleDeclarationIfNeeded(
 
   return ts.factory.createModuleDeclaration(
     [
-      ...(enumDeclaration.modifiers ? enumDeclaration.modifiers : []),
+      ...(createModifiers(enumDeclaration.modifiers) ?? []),
       ts.factory.createModifier(ts.SyntaxKind.DeclareKeyword),
     ],
     enumDeclaration.name,
@@ -115,7 +115,7 @@ function createObjectLiteral(
   );
 
   return ts.factory.createVariableStatement(
-    enumDeclaration.modifiers,
+    createModifiers(enumDeclaration.modifiers),
     ts.factory.createVariableDeclarationList(
       [
         ts.factory.createVariableDeclaration(
@@ -147,7 +147,6 @@ function createObjectLiteral(
               enumDeclaration,
               keysUnionName,
               enumValueMap,
-              enumNameMap,
             ),
           ),
         ),
@@ -157,11 +156,17 @@ function createObjectLiteral(
   );
 }
 
+function createModifiers(enumModifiers?: ts.NodeArray<ts.ModifierLike>) {
+  if (!enumModifiers) {
+    return;
+  }
+  return enumModifiers.filter((mod) => mod.kind !== ts.SyntaxKind.ConstKeyword);
+}
+
 function createSatisfiesTypeTarget(
   enumDeclaration: ts.EnumDeclaration,
   keysUnionName: ts.Identifier,
   enumValueMap: Map<ts.EnumMember, string | number>,
-  enumNameMap: Map<ts.EnumMember, ts.StringLiteral>,
 ): ts.TypeNode {
   // If this is a string enum, we simply don't create a reverse mapping
   if (enumValueMap.values().every((value) => typeof value === 'string')) {
@@ -173,6 +178,7 @@ function createSatisfiesTypeTarget(
     .map((val) =>
       ts.factory.createLiteralTypeNode(ts.factory.createStringLiteral(val)),
     );
+  // Create an intersection between the two records (mapping and reverse mapping)
   return ts.factory.createIntersectionTypeNode([
     excluded.length
       ? ts.factory.createTypeReferenceNode('Record', [
@@ -200,7 +206,7 @@ function createTypeAlias(
 ): ts.Node {
   const values = [...new Set(enumValueMap.values())];
   return ts.factory.createTypeAliasDeclaration(
-    enumDeclaration.modifiers,
+    createModifiers(enumDeclaration.modifiers),
     enumDeclaration.name,
     undefined,
     ts.factory.createUnionTypeNode(
