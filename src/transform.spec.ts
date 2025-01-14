@@ -4,7 +4,10 @@ import assert from 'node:assert/strict';
 import * as prettier from 'prettier';
 import { describe, it } from 'node:test';
 
-describe('transform', async () => {
+const IMAGINARY_FILE_NAME = 'ts.ts';
+const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
+
+await describe('transform', async () => {
   await it('should not change unrelated TS code', async () => {
     await scenario(
       `class Iban {
@@ -18,7 +21,7 @@ describe('transform', async () => {
       false,
     );
   });
-  describe('parameter properties', async () => {
+  await describe('parameter properties', async () => {
     await it('should transform a parameter property', async () => {
       await scenario(
         `class Iban {
@@ -192,7 +195,7 @@ describe('transform', async () => {
     });
   });
 
-  describe('enums', async () => {
+  await describe('enums', async () => {
     await it('should transform a plain enum', async () => {
       await scenario(
         'enum MessageKind { Start, Work, Stop }',
@@ -312,9 +315,42 @@ describe('transform', async () => {
       );
     });
 
-    await it('should not transform a string enum (yet)', async () => {
+    await it('should transform a string enum', async () => {
       await scenario(
-        'enum MessageKind { Start = "start", Work = "work", Stop = "stop" }',
+        'enum Foo { Bar = "bar", Baz = "baz" }',
+        `type Foo = 'bar' | 'baz';
+         type FooKeys = 'Bar' | 'Baz';
+         const Foo = {
+           Bar: 'bar',
+           Baz: 'baz',
+         } satisfies Record<FooKeys, Foo>;
+         declare namespace Foo {
+           type Bar = typeof Foo.Bar;
+           type Baz = typeof Foo.Baz;
+         }
+           `,
+      );
+    });
+    await it('should transform a mixed enum (strings and numbers)', async () => {
+      await scenario(
+        'enum Foo { A = "a", One = 1, Two, B = "b"}',
+        `type Foo = 'a'| 1 | 2 | 'b';
+         type FooKeys = 'A' | 'One' | 'Two' | 'B';
+         const Foo = {
+            1: 'One',
+            2: 'Two',
+            A: 'a',
+            One: 1,
+            Two: 2,
+            B: 'b',
+         } satisfies Record<Exclude<Foo, 'a' | 'b'>, FooKeys> & Record<FooKeys, Foo>;
+          declare namespace Foo {
+            type A = typeof Foo.A;
+            type One = typeof Foo.One;
+            type Two = typeof Foo.Two;
+            type B = typeof Foo.B;
+          }
+         `,
       );
     });
     await it('should transform a computed property name enum', async () => {
@@ -334,33 +370,33 @@ describe('transform', async () => {
     });
   });
 
-  async function scenario(
-    input: string,
-    expectedOutput = input,
-    expectedChanged = input !== expectedOutput,
-  ) {
-    const source = parse(input);
-    const expected = parse(expectedOutput);
-    const actualTransformResult = transform(source);
-    const actualCode = await prettier.format(
-      printer.printFile(actualTransformResult.node),
-      {
-        filepath: IMAGINARY_FILE_NAME,
-      },
-    );
-    const expectedCode = await prettier.format(printer.printFile(expected), {
-      filepath: IMAGINARY_FILE_NAME,
-    });
-    assert.equal(
-      actualTransformResult.changed,
-      expectedChanged,
-      `Expected input to be changed, but wasn't: \`${input}\``,
-    );
-    assert.deepEqual(actualCode, expectedCode);
-  }
+  
 });
-const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
-const IMAGINARY_FILE_NAME = 'ts.ts';
+
+async function scenario(
+  input: string,
+  expectedOutput = input,
+  expectedChanged = input !== expectedOutput,
+) {
+  const source = parse(input);
+  const expected = parse(expectedOutput);
+  const actualTransformResult = transform(source);
+  const actualCode = await prettier.format(
+    printer.printFile(actualTransformResult.node),
+    {
+      filepath: IMAGINARY_FILE_NAME,
+    },
+  );
+  const expectedCode = await prettier.format(printer.printFile(expected), {
+    filepath: IMAGINARY_FILE_NAME,
+  });
+  assert.equal(
+    actualTransformResult.changed,
+    expectedChanged,
+    `Expected input to be changed, but wasn't: \`${input}\``,
+  );
+  assert.deepEqual(actualCode, expectedCode);
+}
 function parse(input: string) {
   return ts.createSourceFile(
     IMAGINARY_FILE_NAME,

@@ -4,7 +4,7 @@
     "composite": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "target": "es2022",
+    "target": "es2023",
     "allowJs": true,
     "resolveJsonModule": true,
     "moduleDetection": "force",
@@ -18,8 +18,8 @@
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
-    "lib": ["es2022"],
+    "lib": ["es2023", "ESNext.Iterator"],
     "allowImportingTsExtensions": true,
-    "rewriteRelativeImportExtensions": true,
+    "rewriteRelativeImportExtensions": true
   }
 }
