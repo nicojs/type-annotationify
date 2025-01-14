@@ -253,8 +253,20 @@ describe('transform', async () => {
         'enum MessageKind { Start = "start", Work = "work", Stop = "stop" }',
       );
     });
-    await it('should not transform a computed property name enum (yet)', async () => {
-      await scenario('enum MessageKind { ["▶"], ["👷‍♂️"], ["🛑"] }');
+    await it('should transform a computed property name enum', async () => {
+      await scenario(
+        'enum PathSeparator { ["/"], ["\\\\"] }',
+        `
+      type PathSeparator = 0 | 1;
+      type PathSeparatorKeys = '/' | '\\\\';
+      const PathSeparator = {
+        0: '/',
+        1: '\\\\',
+        '/': 0,
+        '\\\\': 1
+        } satisfies Record<PathSeparator, PathSeparatorKeys> & Record<PathSeparatorKeys, PathSeparator>;
+      `,
+      );
     });
   });
 
