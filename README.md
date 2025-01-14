@@ -13,17 +13,17 @@ This is a simple tool to migrate full-fledged TypeScript code to type-annotated 
 
 👷‍♂️ Work in progress. This tool is still in development, and not all syntax transformations are supported yet.
 
-| Syntax                                      | Status | Notes                                                             |
-| ------------------------------------------- | ------ | ----------------------------------------------------------------- |
-| Parameter Properties                        | ✅     | [See limitations](#parameter-property-transformation-limitations) |
-| Parameter Properties with `super()` call    | ✅     | [See limitations](#parameter-property-transformation-limitations) |
-| Plain Enum                                  | ✅     | [See limitations](#enum-transformation-limitations)               |
-| Number Enum                                 | ✅     | [See limitations](#enum-transformation-limitations)               |
-| String Enum                                 | ❌     |                                                                   |
-| Const Enum                                  | ❌     |                                                                   |
-| Type assertion expressions                  | ❌     | I.e. `<string>value` --> `value as string`                        |
-| Namespaces                                  | ❌     | This might turn out to be impossible to do, to be investigated    |
-| Rewrite file extensions in import specifier | ❌     | This might be included with an option in the future               |
+| Syntax                                      | Status | Notes                                                          |
+| ------------------------------------------- | ------ | -------------------------------------------------------------- |
+| Parameter Properties                        | ✅     |                                                                |
+| Parameter Properties with `super()` call    | ✅     |                                                                |
+| Plain Enum                                  | ✅     |                                                                |
+| Number Enum                                 | ✅     |                                                                |
+| String Enum                                 | ✅     |                                                                |
+| Const Enum                                  | ❌     |                                                                |
+| Type assertion expressions                  | ❌     | I.e. `<string>value` --> `value as string`                     |
+| Namespaces                                  | ❌     | This might turn out to be impossible to do, to be investigated |
+| Rewrite file extensions in import specifier | ❌     | This might be included with an option in the future            |
 
 ## Installation
 
@@ -120,6 +120,9 @@ enum Message {
   Stop,
 }
 ```
+
+> !NOTE
+> String enums are also supported.
 
 Type-annotationifies as:
 
