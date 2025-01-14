@@ -20,7 +20,7 @@ This is a simple tool to migrate full-fledged TypeScript code to type-annotated 
 | Plain Enum                                  | ✅     |                                                                |
 | Number Enum                                 | ✅     |                                                                |
 | String Enum                                 | ✅     |                                                                |
-| Const Enum                                  | ❌     |                                                                |
+| Const Enum                                  | ✅     |                                                                |
 | Type assertion expressions                  | ❌     | I.e. `<string>value` --> `value as string`                     |
 | Namespaces                                  | ❌     | This might turn out to be impossible to do, to be investigated |
 | Rewrite file extensions in import specifier | ❌     | This might be included with an option in the future            |
@@ -182,6 +182,7 @@ That's a mouthful. Let's break down each part.
    - const bottle = {
    + const bottle: { message: Message } = {
    ```
+1. A const enum is transformed to a regular enum. This is because the caller-side of a `const enum` will assume that there is an actual value after type-stripping.
 
 ## FAQ
 
