@@ -388,6 +388,12 @@ await describe('transform', async () => {
       );
     });
   });
+
+  await describe('type assertions', async () => {
+    await it('should transform a type assertion', async () => {
+      await scenario(`const foo = <a>'foo';`, `const foo = 'foo' as a;`);
+    });
+  });
 });
 
 async function scenario(
