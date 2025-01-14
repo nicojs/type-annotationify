@@ -83,8 +83,8 @@ The property type annotations are left out, as the TypeScript compiler infers th
 
 #### Parameter property transformation limitations
 
-1.  It assumes `noImplicitAny` is enabled. Without out, this inference doesn't work.
-2.  When you use the property in with an assertion function you will get an error. For example:
+1.  It assumes `noImplicitAny` is enabled. Without it, the inference from the assignments in the constructor doesn't work.
+2.  When you use the property as an assertion function you will get an error. For example:
     ```ts
     interface Options {
       Foo: string;
@@ -102,7 +102,7 @@ The property type annotations are left out, as the TypeScript compiler infers th
       }
     }
     ```
-    The solution is to add back the type annotation to the property manually
+    The solution is to add the type annotation to the property manually.
     ```diff
     - private readonly validator;
     + private readonly validator: OptionsValidator;
@@ -110,7 +110,7 @@ The property type annotations are left out, as the TypeScript compiler infers th
 
 ### Enum transformations
 
-An enum transforms to 4 components. The goal is to get as close to a drop-in replacement as possible, without transforming the consumer side of enums.
+An enum transforms to 4 components. The goal is to get as close to a drop-in replacement as possible, without transforming the consuming side of enums.
 
 Input:
 
@@ -141,7 +141,7 @@ declare namespace Message {
 That's a mouthful. Let's break down each part.
 
 - `type Message = 0 | 1` \
-  This allows you to use `Message` as a type: `let message: Message`. The backing value of the enum was a number (`0` or `1`), so thats what it uses here.
+  This allows you to use `Message` as a type: `let message: Message`. The backing value of the enum was a number (`0` or `1`), so thats what is used here.
 - `type MessageKeys = 'Start' | 'Stop'` \
   This is a convenience type alias used in the object literal later.
 - The object literal
@@ -153,7 +153,7 @@ That's a mouthful. Let's break down each part.
     Stop: 1,
   } satisfies Record<Message, MessageKeys> & Record<MessageKeys, Message>;
   ```
-  This allows you to use `Message` as a value: `let message = Message.Start`. This is the actual JS footprint of the enum. The `satisfies` operator isn't strictly necessary, but makes sure the `Message` type and `Message` value keep in sync if you decide to change the `Message` "enum" later.
+  This allows you to use `Message` as a value: `let message = Message.Start`. This is the actual JS footprint of the enum. The `satisfies` operator isn't strictly necessary, but makes sure the `Message` type and `Message` value are kept in sync if you decide to change the `Message` "enum" later.
 - The namespace
   ```ts
   declare namespace Message {
@@ -165,7 +165,7 @@ That's a mouthful. Let's break down each part.
 
 #### Enum transformation limitations
 
-1. Type inference of enum values are now more narrow after the transformation.
+1. Type inference of enum values are more narrow after the transformation.
    ```ts
    const bottle = {
      message: Message.Start,
