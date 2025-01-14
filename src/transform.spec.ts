@@ -245,9 +245,73 @@ describe('transform', async () => {
       );
     });
 
-    await it('should not transform an initialized number enum (yet)', async () => {
-      await scenario('enum MessageKind { Start = 1, Work, Stop }');
+    await it('should transform an enum with number initializers', async () => {
+      await scenario(
+        'enum Rank { Two = 2, Three = 3 }',
+        ` type Rank = 2 | 3;
+          type RankKeys = 'Two' | 'Three';
+          const Rank = {
+            2: 'Two',
+            3: 'Three',
+            Two: 2,
+            Three: 3,
+          } satisfies Record<Rank, RankKeys> & Record<RankKeys, Rank>;
+          declare namespace Rank {
+            type Two = typeof Rank.Two;
+            type Three = typeof Rank.Three;
+          }
+        `,
+      );
     });
+    await it('should transform an enum with and without number initializers', async () => {
+      await scenario(
+        'enum Numbers { One = 1, Two, FortyTwo = 42, FortyThree }',
+        `
+        type Numbers = 1 | 2 | 42 | 43;
+        type NumbersKeys = 'One' | 'Two' | 'FortyTwo' | 'FortyThree';
+        const Numbers = {
+          1: 'One',
+          2: 'Two',
+          42: 'FortyTwo',
+          43: 'FortyThree',
+          One: 1,
+          Two: 2,
+          FortyTwo: 42,
+          FortyThree: 43
+          } satisfies Record<Numbers, NumbersKeys> & Record<NumbersKeys, Numbers>;
+          declare namespace Numbers {
+            type One = typeof Numbers.One;
+            type Two = typeof Numbers.Two;
+            type FortyTwo = typeof Numbers.FortyTwo;
+            type FortyThree = typeof Numbers.FortyThree;
+          }
+        `,
+      );
+    });
+    await it('should transform an enum duplicate number values', async () => {
+      await scenario(
+        'enum NumbersI18n { Two = 2, Three, Deux = 2, Trois }',
+        `
+        type NumbersI18n = 2 | 3;
+        type NumbersI18nKeys = 'Two' | 'Three' | 'Deux' | 'Trois';
+        const NumbersI18n = {
+          2: 'Deux',
+          3: 'Trois',
+          Two: 2,
+          Three: 3,
+          Deux: 2,
+          Trois: 3
+          } satisfies Record<NumbersI18n, NumbersI18nKeys> & Record<NumbersI18nKeys, NumbersI18n>;
+          declare namespace NumbersI18n {
+            type Two = typeof NumbersI18n.Two;
+            type Three = typeof NumbersI18n.Three;
+            type Deux = typeof NumbersI18n.Deux;
+            type Trois = typeof NumbersI18n.Trois;
+          }
+        `,
+      );
+    });
+
     await it('should not transform a string enum (yet)', async () => {
       await scenario(
         'enum MessageKind { Start = "start", Work = "work", Stop = "stop" }',
