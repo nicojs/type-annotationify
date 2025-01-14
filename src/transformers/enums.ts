@@ -4,13 +4,23 @@ import type { TransformResult } from '../transform.ts';
 export function transformEnum(
   enumDeclaration: ts.EnumDeclaration,
 ): TransformResult<ts.Node[]> {
-  // TODO: Implement enums with initializers
-  if (enumDeclaration.members.some((member) => member.initializer)) {
+  // TODO: Implement enums with string initializers
+  if (
+    enumDeclaration.members.some(
+      (member) => member.initializer && ts.isStringLiteral(member.initializer),
+    )
+  ) {
     return { changed: false, node: [enumDeclaration] as const };
   }
 
+  let initValue = 0;
   const enumValueMap = new Map(
-    enumDeclaration.members.map((member, index) => [member, index] as const),
+    enumDeclaration.members.map((member) => {
+      if (member.initializer && ts.isNumericLiteral(member.initializer)) {
+        initValue = parseInt(member.initializer.text);
+      }
+      return [member, initValue++] as const;
+    }),
   );
   const enumNameMap = new Map(
     enumDeclaration.members.map(
@@ -98,6 +108,15 @@ function createObjectLiteral(
   enumNameMap: Map<ts.EnumMember, ts.StringLiteral>,
   keysUnionName: ts.Identifier,
 ): ts.Node {
+  // An enum may have duplicate values, but an object literal doesn't allow duplicate keys
+  // Ex. enum NumbersI18n { Two = 2, Three, Deux = 2, Trois }, should be transformed to: const NumbersI18n = { 2: 'Two', 3: 'Three', ... }
+  const memberMap = new Map(
+    enumDeclaration.members.map((member) => {
+      const value = enumValueMap.get(member)!;
+      return [value, member] as const;
+    }),
+  );
+
   return ts.factory.createVariableStatement(
     enumDeclaration.modifiers,
     ts.factory.createVariableDeclarationList(
@@ -106,13 +125,12 @@ function createObjectLiteral(
           enumDeclaration.name,
           undefined,
           undefined,
-          // Tag with satisfies: Record<MessageKind, MessageKindKeys> & Record<MessageKindKeys, MessageKind>;
           ts.factory.createSatisfiesExpression(
             ts.factory.createObjectLiteralExpression(
               [
-                ...enumDeclaration.members.map((member) =>
+                ...[...memberMap.entries()].map(([key, member]) =>
                   ts.factory.createPropertyAssignment(
-                    ts.factory.createNumericLiteral(enumValueMap.get(member)!),
+                    ts.factory.createNumericLiteral(key),
                     enumNameMap.get(member)!,
                   ),
                 ),
@@ -125,6 +143,7 @@ function createObjectLiteral(
               ],
               true,
             ),
+            // Tag with satisfies: Record<MessageKind, MessageKindKeys> & Record<MessageKindKeys, MessageKind>;
             ts.factory.createIntersectionTypeNode([
               createRecord(enumDeclaration.name, keysUnionName),
               createRecord(keysUnionName, enumDeclaration.name),
@@ -148,14 +167,15 @@ function createTypeAlias(
   enumDeclaration: ts.EnumDeclaration,
   enumValueMap: Map<ts.EnumMember, number>,
 ): ts.Node {
+  const values = [...new Set(enumValueMap.values())];
   return ts.factory.createTypeAliasDeclaration(
     enumDeclaration.modifiers,
     enumDeclaration.name,
     undefined,
     ts.factory.createUnionTypeNode(
-      enumDeclaration.members.map((member) =>
+      values.map((value) =>
         ts.factory.createLiteralTypeNode(
-          ts.factory.createNumericLiteral(enumValueMap.get(member)!),
+          ts.factory.createNumericLiteral(value),
         ),
       ),
     ),
