@@ -40,6 +40,10 @@ export function transform(
       changed ||= result.changed;
       resultingNode = result.node;
     }
+    if (ts.isTypeAssertionExpression(node)) {
+      resultingNode = ts.factory.createAsExpression(node.expression, node.type);
+      changed = true;
+    }
     if (Array.isArray(resultingNode)) {
       return resultingNode.map((node) =>
         ts.visitEachChild(node, transformNode, undefined),

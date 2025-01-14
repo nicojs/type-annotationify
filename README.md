@@ -21,7 +21,7 @@ This is a simple tool to migrate full-fledged TypeScript code to type-annotated 
 | Number Enum                                 | ✅     |                                                                |
 | String Enum                                 | ✅     |                                                                |
 | Const Enum                                  | ✅     |                                                                |
-| Type assertion expressions                  | ❌     | I.e. `<string>value` --> `value as string`                     |
+| Type assertion expressions                  | ✅     | I.e. `<string>value` --> `value as string`                     |
 | Namespaces                                  | ❌     | This might turn out to be impossible to do, to be investigated |
 | Rewrite file extensions in import specifier | ❌     | This might be included with an option in the future            |
 
