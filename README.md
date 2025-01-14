@@ -79,7 +79,7 @@ class Foo {
 
 When a `super()` call is present, the assignments in the constructor are moved to below the `super()` call (like in normal TypeScript transpilation).
 
-The property type annotations are left out, as the TypeScript compiler infers them form the constructor assignments. This is better for code maintainability (every type is listed once instead of twice), but does come with some limitations.
+The property type annotations are left out, as the TypeScript compiler infers them from the constructor assignments. This is better for code maintainability (every type is listed once instead of twice), but does come with some limitations.
 
 #### Parameter property transformation limitations
 
