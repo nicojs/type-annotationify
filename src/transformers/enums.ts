@@ -168,10 +168,10 @@ function createSatisfiesTypeTarget(
     return createRecord(keysUnionName, enumDeclaration.name);
   }
   // If this is a mixed enum, we exclude the strings from reverse mapping
-  const excluded = [...enumValueMap.entries()]
-    .filter(([_, value]) => typeof value === 'string')
-    .map(([_, value]) =>
-      ts.factory.createLiteralTypeNode(ts.factory.createStringLiteral(value)),
+  const excluded = [...enumValueMap.values()]
+    .filter((val) => typeof val === 'string')
+    .map((val) =>
+      ts.factory.createLiteralTypeNode(ts.factory.createStringLiteral(val)),
     );
   return ts.factory.createIntersectionTypeNode([
     excluded.length
