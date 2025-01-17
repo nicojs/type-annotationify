@@ -8,30 +8,39 @@
       "name": "Attach",
       "port": 9229,
       "request": "attach",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
+      "skipFiles": ["<node_internals>/**"],
       "type": "node"
     },
     {
-      "name": "🧪 Test transform.spec.ts (only)",
-      "args": ["src/transform.spec.ts"],
-      "runtimeArgs": ["--experimental-strip-types", "--test-only", "--test-reporter=spec"],
+      "name": "🧪 Test (only)",
+      "runtimeArgs": [
+        "--test",
+        "--experimental-test-isolation=none",
+        "--experimental-strip-types",
+        "--test-only",
+        "--test-reporter=spec"
+      ],
+      "args": ["src/**/*.spec.ts"],
       "request": "launch",
       "skipFiles": ["<node_internals>/**"],
       "type": "node",
       "outputCapture": "std"
     },
     {
-      "name": "🧪 Test transform.spec.ts",
-      "args": ["src/transform.spec.ts"],
-      "runtimeArgs": ["--experimental-strip-types", "--test-reporter=spec"],
+      "name": "🧪 Test",
+      "runtimeArgs": [
+        "--test",
+        "--experimental-test-isolation=none",
+        "--experimental-strip-types",
+        "--test-reporter=spec"
+      ],
+      "args": ["src/**/*.spec.ts"],
       "request": "launch",
       "skipFiles": ["<node_internals>/**"],
       "type": "node",
       "outputCapture": "std"
     },
-    
+
     {
       "type": "node",
       "request": "launch",

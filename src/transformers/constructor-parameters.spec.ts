@@ -1,44 +1,25 @@
-import ts from 'typescript';
-import { parse, transform } from './transform.ts';
-import assert from 'node:assert/strict';
-import * as prettier from 'prettier';
 import { describe, it } from 'node:test';
+import { scenario } from '../transform.spec.ts';
+import { transformConstructorParameters } from './constructor-parameters.ts';
 
-const IMAGINARY_FILE_NAME = 'ts.ts';
-const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
-
-describe('transform', async () => {
-  await it('should not change unrelated TS code', async () => {
+describe(transformConstructorParameters.name, async () => {
+  await it('should transform a parameter property', async () => {
     await scenario(
       `class Iban {
-          constructor(bankCode: string) {}
-          }`,
-      `
-    class Iban {
-          constructor(bankCode: string) {}
-          }
-          `,
-      false,
-    );
-  });
-  await describe('parameter properties', async () => {
-    await it('should transform a parameter property', async () => {
-      await scenario(
-        `class Iban {
             constructor(public bankCode: string) {}
             }`,
-        `class Iban {
+      `class Iban {
             public bankCode;
             constructor(bankCode: string) {
               this.bankCode = bankCode;
             }
     }`,
-      );
-    });
+    );
+  });
 
-    await it('should transform a parameter property deeper in the AST', async () => {
-      await scenario(
-        `
+  await it('should transform a parameter property deeper in the AST', async () => {
+    await scenario(
+      `
       function foo() {
           class Bar {
             doSomething() {
@@ -48,7 +29,7 @@ describe('transform', async () => {
             }
           }
       }`,
-        `
+      `
       function foo() {
           class Bar {
             doSomething() {
@@ -61,12 +42,12 @@ describe('transform', async () => {
             }
           }
       }`,
-      );
-    });
+    );
+  });
 
-    await it('should move any initializer to the parameter', async () => {
-      await scenario(
-        `
+  await it('should move any initializer to the parameter', async () => {
+    await scenario(
+      `
         class Foo {
           constructor(
             public bar: string,
@@ -74,7 +55,7 @@ describe('transform', async () => {
             protected qux = 42,
           ) {}
         }`,
-        `
+      `
         class Foo {
           public bar;
           readonly baz;
@@ -90,12 +71,12 @@ describe('transform', async () => {
           }
         }
       `,
-      );
-    });
+    );
+  });
 
-    await it('should support a class inside a class', async () => {
-      await scenario(
-        `class Iban {
+  await it('should support a class inside a class', async () => {
+    await scenario(
+      `class Iban {
            constructor(public bankCode: string) {}
 
            doWork() {
@@ -105,7 +86,7 @@ describe('transform', async () => {
             }
           }
          }`,
-        `class Iban {
+      `class Iban {
            public bankCode;
            constructor(bankCode: string) {
              this.bankCode = bankCode;
@@ -120,15 +101,15 @@ describe('transform', async () => {
              }
            }
          }`,
-      );
-    });
+    );
+  });
 
-    await it('should transform multiple parameter properties', async () => {
-      await scenario(
-        `class Iban {
+  await it('should transform multiple parameter properties', async () => {
+    await scenario(
+      `class Iban {
               constructor(public bankCode: string, public bic: string) {}
               }`,
-        `class Iban {
+      `class Iban {
               public bankCode;
               public bic;
               constructor(bankCode: string, bic: string) {
@@ -136,44 +117,44 @@ describe('transform', async () => {
                 this.bic = bic;
               }
           }`,
-      );
-    });
+    );
+  });
 
-    await it('should support a constructor with a super() call', async () => {
-      await scenario(
-        `class Iban extends Base {
+  await it('should support a constructor with a super() call', async () => {
+    await scenario(
+      `class Iban extends Base {
               constructor(public bankCode: string) {
                 super();
               }
          }`,
-        `class Iban extends Base {
+      `class Iban extends Base {
               public bankCode;
               constructor(bankCode: string) {
                 super();
                 this.bankCode = bankCode;
               }
           }`,
-      );
-    });
-    await it('should support a constructor with a super() call with parameters', async () => {
-      await scenario(
-        `class Iban extends Base {
+    );
+  });
+  await it('should support a constructor with a super() call with parameters', async () => {
+    await scenario(
+      `class Iban extends Base {
               constructor(public bankCode: string, bic: string) {
                 super(bic);
               }
          }`,
-        `class Iban extends Base {
+      `class Iban extends Base {
               public bankCode;
               constructor(bankCode: string, bic: string) {
                 super(bic);
                 this.bankCode = bankCode;
               }
           }`,
-      );
-    });
-    await it('should support a constructor with statements before the super() call', async () => {
-      await scenario(
-        `class Iban extends Base {
+    );
+  });
+  await it('should support a constructor with statements before the super() call', async () => {
+    await scenario(
+      `class Iban extends Base {
               constructor(public bankCode: string) {
                 console.log('foo');
                 console.log('bar');
@@ -181,7 +162,7 @@ describe('transform', async () => {
                 console.log('baz');
               }
          }`,
-        `class Iban extends Base {
+      `class Iban extends Base {
               public bankCode;
               constructor(bankCode: string) {
                 console.log('foo');
@@ -191,38 +172,6 @@ describe('transform', async () => {
                 console.log('baz');
               }
           }`,
-      );
-    });
-  });
-
-  await describe('type assertions', async () => {
-    await it('should transform a type assertion', async () => {
-      await scenario(`const foo = <a>'foo';`, `const foo = 'foo' as a;`);
-    });
+    );
   });
 });
-
-export async function scenario(
-  input: string,
-  expectedOutput = input,
-  expectedChanged = input !== expectedOutput,
-) {
-  const source = parse(IMAGINARY_FILE_NAME, input);
-  const expected = parse(IMAGINARY_FILE_NAME, expectedOutput);
-  const actualTransformResult = transform(source);
-  const actualCode = await prettier.format(
-    printer.printFile(actualTransformResult.node),
-    {
-      filepath: IMAGINARY_FILE_NAME,
-    },
-  );
-  const expectedCode = await prettier.format(printer.printFile(expected), {
-    filepath: IMAGINARY_FILE_NAME,
-  });
-  assert.equal(
-    actualTransformResult.changed,
-    expectedChanged,
-    `Expected input to be changed, but wasn't: \`${input}\``,
-  );
-  assert.deepEqual(actualCode, expectedCode);
-}
