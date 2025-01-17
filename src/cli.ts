@@ -1,6 +1,7 @@
 import { parseArgs } from 'util';
 import fs from 'fs/promises';
 import { parse, print, transform } from './transform.ts';
+
 export async function runTypeAnnotationify(args: string[]) {
   const { positionals } = parseArgs({ args, allowPositionals: true });
   const patterns: string[] = [...positionals];
