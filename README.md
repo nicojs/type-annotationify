@@ -4,6 +4,8 @@
 
 This is a simple tool to migrate full-fledged TypeScript code to type-annotated TypeScript code that is compatible with the [type annotation proposal](https://github.com/tc39/proposal-type-annotations) as well as NodeJS's[--experimental-strip-types](https://nodejs.org/en/blog/release/v22.6.0#experimental-typescript-support-via-strip-types) mode.
 
+Live demo: [nicojs.github.io/type-annotationify/](https://nicojs.github.io/type-annotationify/)
+
 ![Example of class parameter properties transformation](https://github.com/nicojs/type-annotationify/blob/main/convert-parameter-properties.gif)
 
 > [!NOTE]
