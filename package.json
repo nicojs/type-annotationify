@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "build": "parcel build src/index.html --dist-dir .",
+    "build": "parcel build src/index.html --dist-dir . --public-url /type-annotationify/",
     "start": "parcel serve src/index.html"
   },
   "devDependencies": {
