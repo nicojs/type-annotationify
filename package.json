@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "build": "parcel build src/index.html --dist-dir .",
+    "start": "parcel serve src/index.html"
+  },
+  "devDependencies": {
+    "parcel": "^2.13.3",
+    "process": "^0.11.10",
+    "type-annotationify": "^0.0.7",
+    "util": "^0.12.5"
+  }
+}

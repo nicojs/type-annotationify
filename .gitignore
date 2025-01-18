@@ -1,0 +1,5 @@
+node_modules
+dist
+.stryker-tmp
+*.tsbuildinfo
+.parcel-cache
