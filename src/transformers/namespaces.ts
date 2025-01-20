@@ -126,24 +126,25 @@ function createBlock(
                 statement.declarationList.declarations.filter(
                   (declaration) => declaration.initializer,
                 );
-              if (declarations.length === 1) {
-                const declaration = declarations[0]!;
-                return ts.factory.createExpressionStatement(
-                  ts.factory.createBinaryExpression(
-                    ts.factory.createPropertyAccessExpression(
-                      namespaceName,
-                      declaration.name as ts.Identifier,
-                    ),
-                    ts.SyntaxKind.EqualsToken,
-                    declaration.initializer!,
+              if (!declarations.length) {
+                return ts.factory.createEmptyStatement();
+              }
+
+              let expression = exportValueOfVariableDeclaration(
+                namespaceName,
+                declarations[0]!,
+              );
+              for (let i = 1; i < declarations.length; i++) {
+                expression = ts.factory.createBinaryExpression(
+                  expression,
+                  ts.SyntaxKind.CommaToken,
+                  exportValueOfVariableDeclaration(
+                    namespaceName,
+                    declarations[i]!,
                   ),
                 );
               }
-              return ts.factory.updateVariableStatement(
-                statement,
-                modifiersExceptExport(statement.modifiers),
-                statement.declarationList,
-              );
+              return ts.factory.createExpressionStatement(expression);
             }
             return statement;
           }),
@@ -152,6 +153,20 @@ function createBlock(
     ),
   ];
 }
+function exportValueOfVariableDeclaration(
+  namespaceName: ts.Identifier,
+  declaration: ts.VariableDeclaration,
+): ts.Expression {
+  return ts.factory.createBinaryExpression(
+    ts.factory.createPropertyAccessExpression(
+      namespaceName,
+      declaration.name as ts.Identifier,
+    ),
+    ts.SyntaxKind.EqualsToken,
+    declaration.initializer!,
+  );
+}
+
 function createModifiers(
   modifiers: ts.NodeArray<ts.ModifierLike> | undefined,
   ...additionalModifiers: ts.ModifierLike[]
