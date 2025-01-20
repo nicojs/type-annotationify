@@ -210,19 +210,19 @@ export async function scenario(
   const source = parse(IMAGINARY_FILE_NAME, input);
   const expected = parse(IMAGINARY_FILE_NAME, expectedOutput);
   const actualTransformResult = transform(source);
-  const actualCode = await prettier.format(
-    printer.printFile(actualTransformResult.node),
-    {
-      filepath: IMAGINARY_FILE_NAME,
-    },
-  );
+  const actualCodeUnformatted = printer.printFile(actualTransformResult.node);
+  const actualCode = await prettier.format(actualCodeUnformatted, {
+    filepath: IMAGINARY_FILE_NAME,
+  });
   const expectedCode = await prettier.format(printer.printFile(expected), {
     filepath: IMAGINARY_FILE_NAME,
   });
   assert.equal(
     actualTransformResult.changed,
     expectedChanged,
-    `Expected input to be changed, but wasn't: \`${input}\``,
+    expectedChanged
+      ? `Expected input to be changed, but wasn't: \`${input}\``
+      : `Expected input to not be changed, but was: Expected:\`${input}\`\nActual:${actualCode}`,
   );
   assert.deepEqual(actualCode, expectedCode);
 }

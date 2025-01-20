@@ -18,57 +18,66 @@ export function transformNamespace(
     return { changed: true, node: [] }; // Remove empty namespaces, this is compatible with typescript transpilation
   }
 
-  const namespaceHasExports = hasExports(namespace.body);
-  if (namespaceHasExports) {
-    // Not supported yet
-    return { changed: false, node: [] };
-  }
-
-  const nodes: ts.Node[] = [];
-  const namespaceDeclaration = createNamespaceDeclaration(
-    namespace,
-    namespaceHasExports,
-  );
-  if (namespaceDeclaration) {
-    nodes.push(namespaceDeclaration);
-  }
-  nodes.push(createInterface(namespace));
-  nodes.push(...createBlock(namespace, namespace.body));
   return {
     changed: true,
-    node: nodes,
+    node: [
+      createNamespaceDeclaration(namespace, namespace.body),
+      ...createBlock(namespace, namespace.body),
+    ],
   };
-}
-function hasExports(block: ts.ModuleBlock) {
-  return block.statements.some(
-    (statement) =>
-      (ts.isVariableStatement(statement) ||
-        ts.isFunctionDeclaration(statement) ||
-        ts.isInterfaceDeclaration(statement) ||
-        ts.isClassDeclaration(statement)) &&
-      statement.modifiers?.some(
-        (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword,
-      ),
-  );
 }
 
 function createNamespaceDeclaration(
-  _namespace: ts.ModuleDeclaration,
-  namespaceHasExports: boolean,
-): ts.Node | undefined {
-  if (!namespaceHasExports) {
-    return undefined;
-  }
-  throw new Error('Namespaces with exports not supported yet');
-}
+  namespace: ts.ModuleDeclaration,
+  body: ts.ModuleBlock,
+): ts.Node {
+  return ts.factory.createModuleDeclaration(
+    createModifiers(
+      namespace.modifiers,
+      ts.factory.createModifier(ts.SyntaxKind.DeclareKeyword),
+    ),
+    namespace.name,
+    ts.factory.createModuleBlock(
+      body.statements
+        .filter(isVariableStatementOrInterfaceOrTypeDeclaration)
+        .filter(isExported)
+        .map((statement) => {
+          if (ts.isVariableStatement(statement)) {
+            return ts.factory.createVariableStatement(
+              modifiersExceptExport(statement.modifiers),
+              ts.factory.createVariableDeclarationList(
+                statement.declarationList.declarations.map((declaration) =>
+                  ts.factory.createVariableDeclaration(
+                    declaration.name,
+                    undefined,
+                    declaration.type,
+                    undefined,
+                  ),
+                ),
+                statement.declarationList.flags,
+              ),
+            );
+          }
+          return ts.isTypeAliasDeclaration(statement)
+            ? ts.factory.updateTypeAliasDeclaration(
+                statement,
+                modifiersExceptExport(statement.modifiers),
+                statement.name,
+                statement.typeParameters,
+                statement.type,
+              )
+            : ts.factory.updateInterfaceDeclaration(
+                statement,
+                modifiersExceptExport(statement.modifiers),
+                statement.name,
+                statement.typeParameters,
+                statement.heritageClauses,
+                statement.members,
+              );
+        }),
+    ),
 
-function createInterface(namespace: ts.ModuleDeclaration): ts.Node {
-  return ts.factory.createInterfaceDeclaration(
-    namespace.modifiers,
-    namespace.name as Identifier,
-    undefined,
-    undefined,
-    [],
+    namespace.flags,
   );
 }
 
@@ -101,6 +110,92 @@ function createBlock(
         ),
       ]),
     ),
-    ts.factory.createBlock([initialization, ...block.statements], true),
+    ts.factory.createBlock(
+      [
+        initialization,
+        ...block.statements
+          .filter(isNotInterfaceOrTypeDeclaration)
+          .flatMap((statement) => {
+            if (
+              ts.isVariableStatement(statement) &&
+              statement.modifiers?.some(
+                (mod) => mod.kind === ts.SyntaxKind.ExportKeyword,
+              )
+            ) {
+              const declarations =
+                statement.declarationList.declarations.filter(
+                  (declaration) => declaration.initializer,
+                );
+              if (declarations.length === 1) {
+                const declaration = declarations[0]!;
+                return ts.factory.createExpressionStatement(
+                  ts.factory.createBinaryExpression(
+                    ts.factory.createPropertyAccessExpression(
+                      namespaceName,
+                      declaration.name as ts.Identifier,
+                    ),
+                    ts.SyntaxKind.EqualsToken,
+                    declaration.initializer!,
+                  ),
+                );
+              }
+              return ts.factory.updateVariableStatement(
+                statement,
+                modifiersExceptExport(statement.modifiers),
+                statement.declarationList,
+              );
+            }
+            return statement;
+          }),
+      ],
+      true,
+    ),
   ];
+}
+function createModifiers(
+  modifiers: ts.NodeArray<ts.ModifierLike> | undefined,
+  ...additionalModifiers: ts.ModifierLike[]
+): ts.ModifierLike[] {
+  return [...(modifiers ?? []), ...additionalModifiers];
+}
+function modifiersExceptExport(
+  modifiers: ts.NodeArray<ts.ModifierLike> | undefined,
+) {
+  return modifiers?.filter((mod) => mod.kind !== ts.SyntaxKind.ExportKeyword);
+}
+
+function isNotInterfaceOrTypeDeclaration(statement: ts.Statement): boolean {
+  return !isInterfaceOrTypeDeclaration(statement);
+}
+
+function isVariableStatementOrInterfaceOrTypeDeclaration(
+  statement: ts.Statement,
+): statement is
+  | ts.VariableStatement
+  | ts.InterfaceDeclaration
+  | ts.TypeAliasDeclaration {
+  return (
+    ts.isVariableStatement(statement) || isInterfaceOrTypeDeclaration(statement)
+  );
+}
+
+function isInterfaceOrTypeDeclaration(
+  statement: ts.Statement,
+): statement is ts.InterfaceDeclaration | ts.TypeAliasDeclaration {
+  return (
+    ts.isInterfaceDeclaration(statement) || ts.isTypeAliasDeclaration(statement)
+  );
+}
+
+function isExported(
+  statement:
+    | ts.InterfaceDeclaration
+    | ts.TypeAliasDeclaration
+    | ts.VariableStatement,
+): boolean {
+  return (
+    statement.modifiers?.some(
+      (mod) => mod.kind === ts.SyntaxKind.ExportKeyword,
+    ) ?? false
+  );
 }
