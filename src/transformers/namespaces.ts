@@ -1,5 +1,6 @@
-import ts, { getCombinedModifierFlags, type Identifier } from 'typescript';
-import type { TransformResult } from '../transform.ts';
+import ts, { type Identifier } from 'typescript';
+import { type TransformResult } from '../transform.ts';
+const IGNORE_COMMENT = ' @ts-ignore Migrated namespace with type-annotationify';
 
 export function transformNamespace(
   namespace: ts.ModuleDeclaration,
@@ -21,63 +22,33 @@ export function transformNamespace(
   return {
     changed: true,
     node: [
-      createNamespaceDeclaration(namespace, namespace.body),
+      createNamespaceDeclaration(namespace),
       ...createBlock(namespace, namespace.body),
     ],
   };
 }
 
-function createNamespaceDeclaration(
-  namespace: ts.ModuleDeclaration,
-  body: ts.ModuleBlock,
-): ts.Node {
-  return ts.factory.createModuleDeclaration(
-    createModifiers(
-      namespace.modifiers,
-      ts.factory.createModifier(ts.SyntaxKind.DeclareKeyword),
-    ),
-    namespace.name,
-    ts.factory.createModuleBlock(
-      body.statements
-        .filter(isVariableStatementOrInterfaceOrTypeDeclaration)
-        .filter(isExported)
-        .map((statement) => {
-          if (ts.isVariableStatement(statement)) {
-            return ts.factory.createVariableStatement(
-              modifiersExceptExport(statement.modifiers),
-              ts.factory.createVariableDeclarationList(
-                statement.declarationList.declarations.map((declaration) =>
-                  ts.factory.createVariableDeclaration(
-                    declaration.name,
-                    undefined,
-                    declaration.type,
-                    undefined,
-                  ),
-                ),
-                statement.declarationList.flags,
-              ),
-            );
-          }
-          return ts.isTypeAliasDeclaration(statement)
-            ? ts.factory.updateTypeAliasDeclaration(
-                statement,
-                modifiersExceptExport(statement.modifiers),
-                statement.name,
-                statement.typeParameters,
-                statement.type,
-              )
-            : ts.factory.updateInterfaceDeclaration(
-                statement,
-                modifiersExceptExport(statement.modifiers),
-                statement.name,
-                statement.typeParameters,
-                statement.heritageClauses,
-                statement.members,
-              );
-        }),
-    ),
+function createNamespaceDeclaration(namespace: ts.ModuleDeclaration): ts.Node {
+  const declarationText = ts.transpileDeclaration(namespace.getText(), {
+    reportDiagnostics: false,
+    compilerOptions: { strict: true },
+  }).outputText;
+  const foreignDeclaration = ts.createSourceFile(
+    'ts2.ts',
+    declarationText,
+    ts.ScriptTarget.ESNext,
+    /*setParentNodes:*/ false,
+  ).statements[0]!;
+  const declaration = ts.setTextRange(foreignDeclaration, namespace);
 
-    namespace.flags,
+  // @ts-expect-error the parent is needed here
+  declaration.parent = namespace.parent;
+
+  return ts.addSyntheticLeadingComment(
+    declaration,
+    ts.SyntaxKind.SingleLineCommentTrivia,
+    IGNORE_COMMENT,
+    /* hasTrailingNewLine: */ false,
   );
 }
 
@@ -95,20 +66,25 @@ function createBlock(
       ),
     ),
     ts.SyntaxKind.SingleLineCommentTrivia,
-    ' @ts-ignore Migrated module with type-annotationify',
-    false,
+    IGNORE_COMMENT,
+    /* hasTrailingNewLine: */ false,
   );
 
   return [
-    ts.factory.createVariableStatement(
-      namespace.modifiers,
-      ts.factory.createVariableDeclarationList([
-        ts.factory.createVariableDeclaration(
-          namespaceName,
-          undefined,
-          ts.factory.createTypeReferenceNode(namespace.name as Identifier),
-        ),
-      ]),
+    ts.addSyntheticLeadingComment(
+      ts.factory.createVariableStatement(
+        namespace.modifiers,
+        ts.factory.createVariableDeclarationList([
+          ts.factory.createVariableDeclaration(
+            namespaceName,
+            undefined,
+            ts.factory.createTypeReferenceNode(namespace.name as Identifier),
+          ),
+        ]),
+      ),
+      ts.SyntaxKind.SingleLineCommentTrivia,
+      IGNORE_COMMENT,
+      /* hasTrailingNewLine: */ false,
     ),
     ts.factory.createBlock(
       [
@@ -116,36 +92,28 @@ function createBlock(
         ...block.statements
           .filter(isNotInterfaceOrTypeDeclaration)
           .flatMap((statement) => {
-            if (
-              ts.isVariableStatement(statement) &&
-              statement.modifiers?.some(
-                (mod) => mod.kind === ts.SyntaxKind.ExportKeyword,
-              )
-            ) {
-              const declarations =
-                statement.declarationList.declarations.filter(
-                  (declaration) => declaration.initializer,
-                );
-              if (!declarations.length) {
-                return ts.factory.createEmptyStatement();
-              }
-
-              let expression = exportValueOfVariableDeclaration(
-                namespaceName,
-                declarations[0]!,
-              );
-              for (let i = 1; i < declarations.length; i++) {
-                expression = ts.factory.createBinaryExpression(
-                  expression,
-                  ts.SyntaxKind.CommaToken,
-                  exportValueOfVariableDeclaration(
+            if (isNamespaceExportableValue(statement) && isExported(statement))
+              switch (statement.kind) {
+                case ts.SyntaxKind.VariableStatement:
+                  return toSyntheticExportedVariableStatement(
+                    statement,
                     namespaceName,
-                    declarations[i]!,
-                  ),
-                );
+                  );
+                case ts.SyntaxKind.FunctionDeclaration:
+                  return toSyntheticExportedFunctionDeclaration(
+                    statement,
+                    namespaceName,
+                  );
+                case ts.SyntaxKind.ClassDeclaration:
+                  return toSyntheticExportedClassDeclaration(
+                    statement,
+                    namespaceName,
+                  );
+                default:
+                  throw new Error(
+                    `Exported ${ts.SyntaxKind[(statement satisfies never as ts.Statement).kind]} not supported`,
+                  );
               }
-              return ts.factory.createExpressionStatement(expression);
-            }
             return statement;
           }),
       ],
@@ -153,6 +121,88 @@ function createBlock(
     ),
   ];
 }
+
+function toSyntheticExportedFunctionDeclaration(
+  statement: ts.FunctionDeclaration,
+  namespaceName: ts.Identifier,
+): ts.Statement[] {
+  return [
+    ts.factory.updateFunctionDeclaration(
+      statement,
+      modifiersExceptExport(statement.modifiers),
+      statement.asteriskToken,
+      statement.name,
+      statement.typeParameters,
+      statement.parameters,
+      statement.type,
+      statement.body,
+    ),
+    ts.factory.createExpressionStatement(
+      ts.factory.createBinaryExpression(
+        ts.factory.createPropertyAccessExpression(
+          namespaceName,
+          statement.name!,
+        ),
+        ts.SyntaxKind.EqualsToken,
+        statement.name!,
+      ),
+    ),
+  ];
+}
+
+function toSyntheticExportedClassDeclaration(
+  statement: ts.ClassDeclaration,
+  namespaceName: ts.Identifier,
+): ts.Statement[] {
+  return [
+    ts.factory.createClassDeclaration(
+      modifiersExceptExport(statement.modifiers),
+      statement.name,
+      statement.typeParameters,
+      statement.heritageClauses,
+      statement.members,
+    ),
+    ts.factory.createExpressionStatement(
+      ts.factory.createBinaryExpression(
+        ts.factory.createPropertyAccessExpression(
+          namespaceName,
+          statement.name!,
+        ),
+        ts.SyntaxKind.EqualsToken,
+        statement.name!,
+      ),
+    ),
+  ];
+}
+
+/**
+ * Converts `export const foo = 'bar';` to `Namespace.foo = 'bar'`
+ */
+function toSyntheticExportedVariableStatement(
+  statement: ts.VariableStatement,
+  namespaceName: ts.Identifier,
+) {
+  const declarations = statement.declarationList.declarations.filter(
+    (declaration) => declaration.initializer,
+  );
+  if (!declarations.length) {
+    return ts.factory.createEmptyStatement();
+  }
+
+  let expression = exportValueOfVariableDeclaration(
+    namespaceName,
+    declarations[0]!,
+  );
+  for (let i = 1; i < declarations.length; i++) {
+    expression = ts.factory.createBinaryExpression(
+      expression,
+      ts.SyntaxKind.CommaToken,
+      exportValueOfVariableDeclaration(namespaceName, declarations[i]!),
+    );
+  }
+  return ts.factory.createExpressionStatement(expression);
+}
+
 function exportValueOfVariableDeclaration(
   namespaceName: ts.Identifier,
   declaration: ts.VariableDeclaration,
@@ -167,12 +217,6 @@ function exportValueOfVariableDeclaration(
   );
 }
 
-function createModifiers(
-  modifiers: ts.NodeArray<ts.ModifierLike> | undefined,
-  ...additionalModifiers: ts.ModifierLike[]
-): ts.ModifierLike[] {
-  return [...(modifiers ?? []), ...additionalModifiers];
-}
 function modifiersExceptExport(
   modifiers: ts.NodeArray<ts.ModifierLike> | undefined,
 ) {
@@ -183,14 +227,13 @@ function isNotInterfaceOrTypeDeclaration(statement: ts.Statement): boolean {
   return !isInterfaceOrTypeDeclaration(statement);
 }
 
-function isVariableStatementOrInterfaceOrTypeDeclaration(
+function isNamespaceExportableValue(
   statement: ts.Statement,
-): statement is
-  | ts.VariableStatement
-  | ts.InterfaceDeclaration
-  | ts.TypeAliasDeclaration {
+): statement is NamespaceExportableValue {
   return (
-    ts.isVariableStatement(statement) || isInterfaceOrTypeDeclaration(statement)
+    ts.isVariableStatement(statement) ||
+    ts.isFunctionDeclaration(statement) ||
+    ts.isClassDeclaration(statement)
   );
 }
 
@@ -202,15 +245,15 @@ function isInterfaceOrTypeDeclaration(
   );
 }
 
-function isExported(
-  statement:
-    | ts.InterfaceDeclaration
-    | ts.TypeAliasDeclaration
-    | ts.VariableStatement,
-): boolean {
+function isExported(statement: NamespaceExportableValue): boolean {
   return (
     statement.modifiers?.some(
       (mod) => mod.kind === ts.SyntaxKind.ExportKeyword,
     ) ?? false
   );
 }
+
+export type NamespaceExportableValue =
+  | ts.VariableStatement
+  | ts.FunctionDeclaration
+  | ts.ClassDeclaration;
