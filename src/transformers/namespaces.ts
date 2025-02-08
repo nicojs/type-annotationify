@@ -1,4 +1,4 @@
-import ts, { type Identifier } from 'typescript';
+import ts, { isTypeReferenceNode, type Identifier } from 'typescript';
 import { type TransformResult } from '../transform.ts';
 const IGNORE_COMMENT = ' @ts-ignore Migrated namespace with type-annotationify';
 
@@ -70,6 +70,7 @@ function createBlock(
       ),
     ),
   );
+  const exportedIdentifierNames: string[] = [];
 
   return [
     addIgnoreComment(
@@ -93,18 +94,34 @@ function createBlock(
             if (isNamespaceExportableValue(statement) && isExported(statement))
               switch (statement.kind) {
                 case ts.SyntaxKind.VariableStatement:
+                  exportedIdentifierNames.push(
+                    ...statement.declarationList.declarations
+                      .map(({ name }) => name)
+                      .filter(ts.isIdentifier)
+                      .map(({ text }) => text),
+                  );
+
                   return toSyntheticExportedVariableStatement(
                     statement,
                     namespaceName,
+                    exportedIdentifierNames,
                   );
                 case ts.SyntaxKind.FunctionDeclaration:
                   return toSyntheticExportedFunctionDeclaration(
-                    statement,
+                    transformExportedIdentifiersToNamespaceProperties(
+                      statement,
+                      namespaceName,
+                      exportedIdentifierNames,
+                    ),
                     namespaceName,
                   );
                 case ts.SyntaxKind.ClassDeclaration:
                   return toSyntheticExportedClassDeclaration(
-                    statement,
+                    transformExportedIdentifiersToNamespaceProperties(
+                      statement,
+                      namespaceName,
+                      exportedIdentifierNames,
+                    ),
                     namespaceName,
                   );
                 default:
@@ -112,12 +129,119 @@ function createBlock(
                     `Exported ${ts.SyntaxKind[(statement satisfies never as ts.Statement).kind]} not supported`,
                   );
               }
-            return statement;
+            return transformExportedIdentifiersToNamespaceProperties(
+              statement,
+              namespaceName,
+              exportedIdentifierNames,
+            );
           }),
       ],
       true,
     ),
   ];
+}
+
+/**
+ * Transforms all exported identifiers to namespace properties
+ * @example
+ * // Before
+ * export const foo = 'bar';
+ * export function qux() {
+ *  return foo;
+ * }
+ * // After
+ * Foo.foo = 'bar';
+ * function qux() {
+ *  return Foo.foo;
+ * }
+ */
+function transformExportedIdentifiersToNamespaceProperties<T extends ts.Node>(
+  node: T,
+  namespaceName: Identifier,
+  exportedIdentifiers: readonly string[],
+): T {
+  /**
+   * Rebinds identifiers that are shadowed by a variable declaration
+   */
+  function removeShadowedNames(
+    nodes: readonly Pick<ts.VariableDeclaration, 'name'>[],
+  ) {
+    const reboundNames = nodes
+      .map(({ name }) => name)
+      .filter(ts.isIdentifier)
+      .map(({ text }) => text);
+    exportedIdentifiers = exportedIdentifiers.filter(
+      (id) => !reboundNames.includes(id),
+    );
+  }
+
+  if (ts.isFunctionDeclaration(node)) {
+    // Remove shadowed parameters
+    removeShadowedNames(node.parameters);
+  }
+  if (
+    ts.isForStatement(node) &&
+    node.initializer &&
+    ts.isVariableDeclarationList(node.initializer)
+  ) {
+    // Remove shadowed variables in for initializer
+    removeShadowedNames(node.initializer.declarations);
+  }
+
+  if (ts.isBlock(node)) {
+    node.statements
+      .filter(ts.isVariableStatement)
+      .forEach((variableStatement) =>
+        // Remove shadowed variables
+        removeShadowedNames(variableStatement.declarationList.declarations),
+      );
+  }
+
+  if (ts.isParameter(node)) {
+    // Skip parameters
+    return node;
+  }
+  if (ts.isVariableDeclaration(node)) {
+    // Skip variable name declarations
+    return ts.factory.updateVariableDeclaration(
+      node,
+      node.name,
+      node.exclamationToken,
+      node.type,
+      node.initializer
+        ? (transformExportedIdentifiersToNamespaceProperties(
+            node.initializer,
+            namespaceName,
+            exportedIdentifiers,
+          ) as ts.Expression)
+        : undefined,
+    ) as unknown as T;
+  }
+
+  if (isTypeReferenceNode(node)) {
+    // Skip type references
+    return node;
+  }
+  if (ts.isIdentifier(node) && exportedIdentifiers.includes(node.text)) {
+    // Replace identifier with namespace property. I.e. `foo` -> `Foo.foo`
+    return ts.factory.createPropertyAccessExpression(
+      namespaceName,
+      node,
+    ) as unknown as T;
+  }
+
+  // Recursive, do the same for all children
+  return ts.visitEachChild(
+    node,
+    (child) => {
+      return transformExportedIdentifiersToNamespaceProperties(
+        child,
+        namespaceName,
+        exportedIdentifiers,
+      );
+    },
+    undefined,
+  );
 }
 
 function toSyntheticExportedFunctionDeclaration(
@@ -181,6 +305,7 @@ function toSyntheticExportedClassDeclaration(
 function toSyntheticExportedVariableStatement(
   variableExport: ts.VariableStatement,
   namespaceName: ts.Identifier,
+  exportedIdentifierNames: string[],
 ) {
   const declarations = variableExport.declarationList.declarations.filter(
     (declaration) => declaration.initializer,
@@ -192,6 +317,7 @@ function toSyntheticExportedVariableStatement(
   let expression = exportValueOfVariableDeclaration(
     namespaceName,
     declarations[0]!,
+    exportedIdentifierNames,
   );
   let hasClassDeclaration =
     declarations[0]!.initializer?.kind === ts.SyntaxKind.NewExpression;
@@ -199,7 +325,11 @@ function toSyntheticExportedVariableStatement(
     expression = ts.factory.createBinaryExpression(
       expression,
       ts.SyntaxKind.CommaToken,
-      exportValueOfVariableDeclaration(namespaceName, declarations[i]!),
+      exportValueOfVariableDeclaration(
+        namespaceName,
+        declarations[i]!,
+        exportedIdentifierNames,
+      ),
     );
     hasClassDeclaration =
       declarations[i]!.initializer?.kind === ts.SyntaxKind.NewExpression;
@@ -219,6 +349,7 @@ function toSyntheticExportedVariableStatement(
 function exportValueOfVariableDeclaration(
   namespaceName: ts.Identifier,
   declaration: ts.VariableDeclaration,
+  exportedIdentifierNames: string[],
 ): ts.Expression {
   return ts.factory.createBinaryExpression(
     ts.factory.createPropertyAccessExpression(
@@ -226,7 +357,11 @@ function exportValueOfVariableDeclaration(
       declaration.name as ts.Identifier,
     ),
     ts.SyntaxKind.EqualsToken,
-    declaration.initializer!,
+    transformExportedIdentifiersToNamespaceProperties(
+      declaration.initializer!,
+      namespaceName,
+      exportedIdentifierNames,
+    ),
   );
 }
 
