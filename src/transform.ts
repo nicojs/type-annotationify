@@ -1,6 +1,7 @@
 import ts from 'typescript';
 import { transformConstructorParameters } from './transformers/constructor-parameters.ts';
 import { transformEnum } from './transformers/enums.ts';
+import { transformNamespace } from './transformers/namespaces.ts';
 export function parse(fileName: string, content: string) {
   return ts.createSourceFile(
     fileName,
@@ -44,6 +45,11 @@ export function transform(
       resultingNode = ts.factory.createAsExpression(node.expression, node.type);
       changed = true;
     }
+    if (ts.isModuleDeclaration(node)) {
+      const result = transformNamespace(node);
+      changed ||= result.changed;
+      resultingNode = result.node;
+    }
     if (Array.isArray(resultingNode)) {
       return resultingNode.map((node) =>
         ts.visitEachChild(node, transformNode, undefined),
@@ -53,4 +59,3 @@ export function transform(
     }
   }
 }
-

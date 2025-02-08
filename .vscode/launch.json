@@ -12,21 +12,6 @@
       "type": "node"
     },
     {
-      "name": "🧪 Test (only)",
-      "runtimeArgs": [
-        "--test",
-        "--experimental-test-isolation=none",
-        "--experimental-strip-types",
-        "--test-only",
-        "--test-reporter=spec"
-      ],
-      "args": ["src/**/*.spec.ts"],
-      "request": "launch",
-      "skipFiles": ["<node_internals>/**"],
-      "type": "node",
-      "outputCapture": "std"
-    },
-    {
       "name": "🧪 Test",
       "runtimeArgs": [
         "--test",
