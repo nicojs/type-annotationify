@@ -13,17 +13,17 @@ This is a simple tool to migrate full-fledged TypeScript code to type-annotated 
 
 👷‍♂️ Work in progress. This tool is still in development, and not all syntax transformations are supported yet.
 
-| Syntax                                      | Status | Notes                                                                                                                             |
-| ------------------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| Parameter Properties                        | ✅     |                                                                                                                                   |
-| Parameter Properties with `super()` call    | ✅     |                                                                                                                                   |
-| Plain Enum                                  | ✅     |                                                                                                                                   |
-| Number Enum                                 | ✅     |                                                                                                                                   |
-| String Enum                                 | ✅     |                                                                                                                                   |
-| Const Enum                                  | ✅     |                                                                                                                                   |
-| Type assertion expressions                  | ✅     | I.e. `<string>value` --> `value as string`                                                                                        |
-| Namespaces                                  | ❌     | This might turn out to be impossible to do, to be investigated, see [#26](https://github.com/nicojs/type-annotationify/issues/26) |
-| Rewrite file extensions in import specifier | ❌     | This might be included with an option in the future                                                                               |
+| Syntax                                      | Status | Notes                                               |
+| ------------------------------------------- | ------ | --------------------------------------------------- |
+| Parameter Properties                        | ✅     |                                                     |
+| Parameter Properties with `super()` call    | ✅     |                                                     |
+| Plain Enum                                  | ✅     |                                                     |
+| Number Enum                                 | ✅     |                                                     |
+| String Enum                                 | ✅     |                                                     |
+| Const Enum                                  | ✅     |                                                     |
+| Type assertion expressions                  | ✅     | I.e. `<string>value` --> `value as string`          |
+| Namespaces                                  | ✅     | With some limitations                               |
+| Rewrite file extensions in import specifier | ❌     | This might be included with an option in the future |
 
 ## Installation
 
@@ -184,12 +184,87 @@ That's a mouthful. Let's break down each part.
    ```
 1. A const enum is transformed to a regular enum. This is because the caller-side of a `const enum` will assume that there is an actual value after type-stripping.
 
+### Type assertion expressions
+
+Input:
+
+```ts
+const value = <string>JSON.parse('"test"');
+```
+
+Type-annotationifies as:
+
+```ts
+const value = JSON.parse('"test"') as string;
+```
+
+### Namespaces
+
+Namespace transformation is a bit more complex. The goal is to keep the namespace as close to the original as possible, while still using erasable types only. It unfortunately _needs_ a couple of `@ts-ignore` comments to make it work. For more info and reasoning, see [#26](https://github.com/nicojs/type-annotationify/issues/26).
+
+Input:
+
+```ts
+namespace Geometry {
+  console.log('Foo is defined');
+  export const pi = 3.141527;
+  export function areaOfCircle(radius: number) {
+    return pi * radius ** 2;
+  }
+}
+```
+
+Type-annotationifies as:
+
+```ts
+// @ts-ignore Migrated namespace with type-annotationify
+declare namespace Geometry {
+  const pi = 3.141527;
+  function areaOfCircle(radius: number): number;
+}
+// @ts-ignore Migrated namespace with type-annotationify
+var Geometry: Geometry;
+{
+  // @ts-ignore Migrated namespace with type-annotationify
+  Geometry ??= {};
+  console.log('Foo is defined');
+  // @ts-ignore Migrated namespace with type-annotationify
+  Geometry.pi = 3.141527;
+  function areaOfCircle(radius: number) {
+    return Geometry.pi * radius ** 2;
+  }
+  Geometry.areaOfCircle = areaOfCircle;
+}
+```
+
+#### Namespace transformation limitations
+
+1. Nested namespaces are not supported yet. Please open an issue if you want support for this.
+1. Referring to identifiers with their local name across namespaces declarations with the same name is not supported. For example:
+   ```ts
+   namespace Geometry {
+     export const pi = 3.141527;
+   }
+   namespace Geometry {
+     export function areaOfCircle(radius: number) {
+       return pi * radius ** 2;
+     }
+   }
+   ```
+   This will result in an error because `pi` is not defined in the second namespace. The solution is to refer to `pi` as `Geometry.pi`:
+   ```diff
+   - return pi * radius ** 2;
+   + return Geometry.pi * radius ** 2;
+   ```
+1. The `@ts-ignore` comments are necessary to make the namespace work. This is because there are a bunch of illegal TypeScript constructs needed, like declaring a namespace and a variable with the same name. This also means that _TypeScript_ is turned off entirely for these statements.
+
 ## FAQ
 
 ### Why would I want to use this tool?
 
-1. You want to be alined with the upcoming [type annotation proposal](https://github.com/tc39/proposal-type-annotations).
+1. You want to be aligned with the upcoming [type annotation proposal](https://github.com/tc39/proposal-type-annotations).
 2. You want to use NodeJS's [--experimental-strip-types](https://nodejs.org/en/blog/release/v22.6.0#experimental-typescript-support-via-strip-types) mode.
+3. You want to use TypeScript [`--erasableSyntaxOnly`](https://devblogs.microsoft.com/typescript/announcing-typescript-5-8-beta/#the---erasablesyntaxonly-option) option.
 
 ### How does this tool work?
 
@@ -198,7 +273,3 @@ This tool uses the TypeScript compiler API to parse the TypeScript code and then
 ### Why do I get `ExperimentalWarning` errors?
 
 This tool uses plain NodeJS as much as possible. It doesn't rely on [`glob`](https://www.npmjs.com/package/glob) or other libraries to reduce the download size and maintenance (the only dependency is TypeScript itself). That's also why the minimal version of node is set to 22.
-
-```
-
-```
