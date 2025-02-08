@@ -12,7 +12,7 @@
     />
   </head>
   <body class="container mt-3">
-    <div class="p-5 mb-4 bg-body-tertiary rounded-3">
+    <div class="p-3 mb-4 bg-body-tertiary rounded-3">
       <div class="container-fluid">
         <h1 class="display-5 fw-bold">Type Annotationify</h1>
         <p class="col-md-8 fs-4">
@@ -32,6 +32,12 @@
           <button id="enums-demo" class="btn btn-secondary demo">
             Enums demo
           </button>
+          <button id="type-assertions-demo" class="btn btn-secondary demo">
+            Type assertions demo
+          </button>
+          <button id="namespaces-demo" class="btn btn-secondary demo">
+            Namespaces demo
+          </button>
         </div>
       </div>
       <form class="mb-3 col-5">
@@ -39,7 +45,7 @@
         <textarea
           id="input"
           name="code"
-          rows="12"
+          rows="16"
           cols="80"
           class="form-control mb-3"
         ></textarea>
@@ -51,9 +57,10 @@
         <h2>Annotationified</h2>
         <textarea
           id="output"
-          rows="12"
+          rows="20"
           cols="80"
           class="form-control mb-3"
+          style="font-size: 0.8rem"
         ></textarea>
       </div>
     </div>

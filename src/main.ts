@@ -15,19 +15,6 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
-document.getElementById("enums-demo")!.addEventListener("click", () => {
-  input.value = enumDemo;
-  submitForm();
-});
-document.getElementById("classes-demo")!.addEventListener("click", () => {
-  input.value = classDemo;
-  submitForm();
-});
-document.getElementById("general-demo")!.addEventListener("click", () => {
-  input.value = generalDemo;
-  submitForm();
-});
-
 function submitForm() {
   form.dispatchEvent(new SubmitEvent("submit", { cancelable: true }));
 }
@@ -73,5 +60,25 @@ class Dog extends Animal {
 }
 `;
 
+const typeAssertionsDemo = `const foo = <string>JSON.parse('"foo"');`;
+const namespacesDemo = `namespace Geometry {
+  export const pi = 3.141527;
+  export function areaOfCircle(radius: number): number {
+    return pi * radius ** 2;
+  }
+}`;
+
 input.value = generalDemo;
 submitForm();
+
+function bindDemo(id: string, demo: string) {
+  document.getElementById(id)!.addEventListener("click", () => {
+    input.value = demo;
+    submitForm();
+  });
+}
+bindDemo("type-assertions-demo", typeAssertionsDemo);
+bindDemo("enums-demo", enumDemo);
+bindDemo("general-demo", generalDemo);
+bindDemo("namespaces-demo", namespacesDemo);
+bindDemo("classes-demo", classDemo);
