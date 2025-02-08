@@ -44,8 +44,12 @@ function createNamespaceDeclaration(namespace: ts.ModuleDeclaration): ts.Node {
   // @ts-expect-error the parent is needed here
   declaration.parent = namespace.parent;
 
+  return addIgnoreComment(declaration);
+}
+
+function addIgnoreComment<T extends ts.Node>(node: T): T {
   return ts.addSyntheticLeadingComment(
-    declaration,
+    node,
     ts.SyntaxKind.SingleLineCommentTrivia,
     IGNORE_COMMENT,
     /* hasTrailingNewLine: */ false,
@@ -57,7 +61,7 @@ function createBlock(
   block: ts.ModuleBlock,
 ): ts.Node[] {
   const namespaceName = namespace.name as Identifier;
-  const initialization = ts.addSyntheticLeadingComment(
+  const initialization = addIgnoreComment(
     ts.factory.createExpressionStatement(
       ts.factory.createBinaryExpression(
         namespaceName,
@@ -65,13 +69,10 @@ function createBlock(
         ts.factory.createObjectLiteralExpression(),
       ),
     ),
-    ts.SyntaxKind.SingleLineCommentTrivia,
-    IGNORE_COMMENT,
-    /* hasTrailingNewLine: */ false,
   );
 
   return [
-    ts.addSyntheticLeadingComment(
+    addIgnoreComment(
       ts.factory.createVariableStatement(
         namespace.modifiers,
         ts.factory.createVariableDeclarationList([
@@ -82,9 +83,6 @@ function createBlock(
           ),
         ]),
       ),
-      ts.SyntaxKind.SingleLineCommentTrivia,
-      IGNORE_COMMENT,
-      /* hasTrailingNewLine: */ false,
     ),
     ts.factory.createBlock(
       [
@@ -162,7 +160,7 @@ function toSyntheticExportedClassDeclaration(
       statement.heritageClauses,
       statement.members,
     ),
-    ts.addSyntheticLeadingComment(
+    addIgnoreComment(
       ts.factory.createExpressionStatement(
         ts.factory.createBinaryExpression(
           ts.factory.createPropertyAccessExpression(
@@ -173,9 +171,6 @@ function toSyntheticExportedClassDeclaration(
           statement.name!,
         ),
       ),
-      ts.SyntaxKind.SingleLineCommentTrivia,
-      IGNORE_COMMENT,
-      false,
     ),
   ];
 }
@@ -184,10 +179,10 @@ function toSyntheticExportedClassDeclaration(
  * Converts `export const foo = 'bar';` to `Namespace.foo = 'bar'`
  */
 function toSyntheticExportedVariableStatement(
-  statement: ts.VariableStatement,
+  variableExport: ts.VariableStatement,
   namespaceName: ts.Identifier,
 ) {
-  const declarations = statement.declarationList.declarations.filter(
+  const declarations = variableExport.declarationList.declarations.filter(
     (declaration) => declaration.initializer,
   );
   if (!declarations.length) {
@@ -198,14 +193,27 @@ function toSyntheticExportedVariableStatement(
     namespaceName,
     declarations[0]!,
   );
+  let hasClassDeclaration =
+    declarations[0]!.initializer?.kind === ts.SyntaxKind.NewExpression;
   for (let i = 1; i < declarations.length; i++) {
     expression = ts.factory.createBinaryExpression(
       expression,
       ts.SyntaxKind.CommaToken,
       exportValueOfVariableDeclaration(namespaceName, declarations[i]!),
     );
+    hasClassDeclaration =
+      declarations[i]!.initializer?.kind === ts.SyntaxKind.NewExpression;
   }
-  return ts.factory.createExpressionStatement(expression);
+  const expressionStatement = ts.factory.createExpressionStatement(expression);
+
+  if (
+    variableExport.declarationList.flags & ts.NodeFlags.Const ||
+    hasClassDeclaration
+  ) {
+    return addIgnoreComment(expressionStatement);
+  }
+
+  return expressionStatement;
 }
 
 function exportValueOfVariableDeclaration(

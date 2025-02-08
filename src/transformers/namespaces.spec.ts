@@ -35,6 +35,34 @@ describe(transformNamespace.name, async () => {
     );
   });
 
+  await it('should transform namespace exports with "const" keyword using "@ts-ignore"', async () => {
+    await scenario(
+      `
+      namespace Foo {
+        export const pi: 3.14 = 3.14;
+        export let e: 2.71 = 2.71;
+        export var tau: 6.28 = 6.28;
+      }
+      `,
+      `// @ts-ignore Migrated namespace with type-annotationify
+      declare namespace Foo {
+        const pi: 3.14;
+        let e: 2.71;
+        var tau: 6.28;
+      }
+      // @ts-ignore Migrated namespace with type-annotationify
+      var Foo: Foo;
+      {
+        // @ts-ignore Migrated namespace with type-annotationify
+        Foo ??= {};
+        // @ts-ignore Migrated namespace with type-annotationify
+        Foo.pi = 3.14;
+        Foo.e = 2.71;
+        Foo.tau = 6.28;
+      }`,
+    );
+  });
+
   await it('should transform namespaces with a type exports', async () => {
     await scenario(
       `
@@ -78,6 +106,7 @@ describe(transformNamespace.name, async () => {
        {
          // @ts-ignore Migrated namespace with type-annotationify
          Foo ??= {};
+         // @ts-ignore Migrated namespace with type-annotationify
          Foo.pi = 3.14;
        }`,
     );
@@ -149,6 +178,7 @@ describe(transformNamespace.name, async () => {
                   return 'Woof';
                 };
             }
+            export const dog = new Dog(4, 'Poodle');
         }
         }`,
       ` // @ts-ignore Migrated namespace with type-annotationify
@@ -163,6 +193,7 @@ describe(transformNamespace.name, async () => {
               constructor(legs: number, breed: string);
               makeSound(): string;
           }
+          const dog: Dog;
         }
 
          // @ts-ignore Migrated namespace with type-annotationify
@@ -191,8 +222,35 @@ describe(transformNamespace.name, async () => {
             }
             // @ts-ignore Migrated namespace with type-annotationify
             Zoo.Dog = Dog;
+            // @ts-ignore Migrated namespace with type-annotationify
+            Zoo.dog = new Dog(4, 'Poodle');
          }
         `,
+    );
+  });
+
+  await it('should add a @ts-ignore comment to class instance exports', async () => {
+    await scenario(
+      `namespace Farm {
+        export class Animal {}
+        export let dog = new Animal();
+      }`,
+      `// @ts-ignore Migrated namespace with type-annotationify
+      declare namespace Farm {
+        class Animal {}
+        let dog: Animal;
+      }
+      // @ts-ignore Migrated namespace with type-annotationify
+      var Farm: Farm;
+      {
+        // @ts-ignore Migrated namespace with type-annotationify
+        Farm ??= {};
+        class Animal {}
+        // @ts-ignore Migrated namespace with type-annotationify
+        Farm.Animal = Animal;
+        // @ts-ignore Migrated namespace with type-annotationify
+        Farm.dog = new Animal();
+      }`,
     );
   });
 
@@ -219,6 +277,7 @@ describe(transformNamespace.name, async () => {
       {
         // @ts-ignore Migrated namespace with type-annotationify
         Foo ??= {};
+        // @ts-ignore Migrated namespace with type-annotationify
         Foo.pi = 3.14, Foo.e = 2.71, Foo.tau = 6.28;
       }`,
     );
