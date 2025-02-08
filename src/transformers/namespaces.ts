@@ -162,15 +162,20 @@ function toSyntheticExportedClassDeclaration(
       statement.heritageClauses,
       statement.members,
     ),
-    ts.factory.createExpressionStatement(
-      ts.factory.createBinaryExpression(
-        ts.factory.createPropertyAccessExpression(
-          namespaceName,
+    ts.addSyntheticLeadingComment(
+      ts.factory.createExpressionStatement(
+        ts.factory.createBinaryExpression(
+          ts.factory.createPropertyAccessExpression(
+            namespaceName,
+            statement.name!,
+          ),
+          ts.SyntaxKind.EqualsToken,
           statement.name!,
         ),
-        ts.SyntaxKind.EqualsToken,
-        statement.name!,
       ),
+      ts.SyntaxKind.SingleLineCommentTrivia,
+      IGNORE_COMMENT,
+      false,
     ),
   ];
 }

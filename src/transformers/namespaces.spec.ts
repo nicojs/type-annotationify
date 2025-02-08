@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 import { transformNamespace } from './namespaces.ts';
 import { scenario } from '../transform.spec.ts';
 
-describe.only(transformNamespace.name, async () => {
+describe(transformNamespace.name, async () => {
   await it('should remove empty namespaces', async () => {
     await scenario(`namespace Foo {}`, ``);
     await scenario(`module Foo {}`, ``);
@@ -129,7 +129,7 @@ describe.only(transformNamespace.name, async () => {
     );
   });
 
-  await it.skip('should transform namespaces with a class export', async () => {
+  await it('should transform namespaces with a class export', async () => {
     await scenario(
       ` namespace Zoo {
             export abstract class Animal {
@@ -151,7 +151,8 @@ describe.only(transformNamespace.name, async () => {
             }
         }
         }`,
-      ` declare namespace Zoo {
+      ` // @ts-ignore Migrated namespace with type-annotationify
+        declare namespace Zoo {
           abstract class Animal {
               legs: number;
               constructor(legs: number);
@@ -164,6 +165,7 @@ describe.only(transformNamespace.name, async () => {
           }
         }
 
+         // @ts-ignore Migrated namespace with type-annotationify
          var Zoo: Zoo;
          {
             // @ts-ignore Migrated namespace with type-annotationify
@@ -175,6 +177,7 @@ describe.only(transformNamespace.name, async () => {
               }
               abstract makeSound(): string;
             }
+            // @ts-ignore Migrated namespace with type-annotationify
             Zoo.Animal = Animal;
             class Dog extends Animal {
                 protected breed;
@@ -186,6 +189,7 @@ describe.only(transformNamespace.name, async () => {
                     return 'Woof';
                 }
             }
+            // @ts-ignore Migrated namespace with type-annotationify
             Zoo.Dog = Dog;
          }
         `,
