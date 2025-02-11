@@ -6,70 +6,52 @@ describe(transformEnum.name, async () => {
   await it('should transform a plain enum', async () => {
     await scenario(
       'enum MessageKind { Start, Work, Stop }',
-      `type MessageKind = 0 | 1 | 2;
-         type MessageKindKeys = 'Start' | 'Work' | 'Stop';
-         const MessageKind = {
+      `const MessageKind = {
           0: 'Start',
           1: 'Work',
           2: 'Stop',
           Start: 0,
           Work: 1,
           Stop: 2
-          } satisfies Record<MessageKind, MessageKindKeys> & Record<MessageKindKeys, MessageKind>;
-          declare namespace MessageKind {
-            type Start = typeof MessageKind.Start;
-            type Work = typeof MessageKind.Work;
-            type Stop = typeof MessageKind.Stop;
-          }`,
-    );
-  });
-  await it('should use unique name for the keys enum', async () => {
-    await scenario(
-      `enum MessageKind { Start }; 
-         let MessageKindKeys = 0;
-         `,
-      `type MessageKind = 0;
-         type MessageKindKeys_1 = 'Start';
-         const MessageKind = {
-          0: 'Start',
-          Start: 0
-          } satisfies Record<MessageKind, MessageKindKeys_1> & Record<MessageKindKeys_1, MessageKind>;
-          declare namespace MessageKind {
-            type Start = typeof MessageKind.Start;
-          }
-         let MessageKindKeys = 0;`,
+       } as const;
+       type MessageKind = typeof MessageKind[keyof typeof MessageKind & string];
+       declare namespace MessageKind {
+         type Start = typeof MessageKind.Start;
+         type Work = typeof MessageKind.Work;
+         type Stop = typeof MessageKind.Stop;
+       }`,
     );
   });
   await it('should transform an exported enum', async () => {
     await scenario(
       'export enum MessageKind { Start }',
-      `export type MessageKind = 0;
-         type MessageKindKeys = 'Start';
-         export const MessageKind = {
-          0: 'Start',
-          Start: 0,
-          } satisfies Record<MessageKind, MessageKindKeys> & Record<MessageKindKeys, MessageKind>;
-          export declare namespace MessageKind {
-            type Start = typeof MessageKind.Start;
-          }`,
+      `
+      export const MessageKind = {
+        0: 'Start',
+        Start: 0,
+      } as const;
+      export type MessageKind = typeof MessageKind[keyof typeof MessageKind & string];
+      export declare namespace MessageKind {
+        type Start = typeof MessageKind.Start;
+      }`,
     );
   });
 
   await it('should transform an enum with number initializers', async () => {
     await scenario(
       'enum Rank { Two = 2, Three = 3 }',
-      ` type Rank = 2 | 3;
-          type RankKeys = 'Two' | 'Three';
-          const Rank = {
-            2: 'Two',
-            3: 'Three',
-            Two: 2,
-            Three: 3,
-          } satisfies Record<Rank, RankKeys> & Record<RankKeys, Rank>;
-          declare namespace Rank {
-            type Two = typeof Rank.Two;
-            type Three = typeof Rank.Three;
-          }
+      `
+      const Rank = {
+        2: 'Two',
+        3: 'Three',
+        Two: 2,
+        Three: 3,
+      } as const;
+      type Rank = typeof Rank[keyof typeof Rank & string];
+      declare namespace Rank {
+        type Two = typeof Rank.Two;
+        type Three = typeof Rank.Three;
+      }
         `,
     );
   });
@@ -77,8 +59,6 @@ describe(transformEnum.name, async () => {
     await scenario(
       'enum Numbers { One = 1, Two, FortyTwo = 42, FortyThree }',
       `
-        type Numbers = 1 | 2 | 42 | 43;
-        type NumbersKeys = 'One' | 'Two' | 'FortyTwo' | 'FortyThree';
         const Numbers = {
           1: 'One',
           2: 'Two',
@@ -88,22 +68,21 @@ describe(transformEnum.name, async () => {
           Two: 2,
           FortyTwo: 42,
           FortyThree: 43
-          } satisfies Record<Numbers, NumbersKeys> & Record<NumbersKeys, Numbers>;
-          declare namespace Numbers {
-            type One = typeof Numbers.One;
-            type Two = typeof Numbers.Two;
-            type FortyTwo = typeof Numbers.FortyTwo;
-            type FortyThree = typeof Numbers.FortyThree;
-          }
+        } as const;
+        type Numbers = typeof Numbers[keyof typeof Numbers & string];
+        declare namespace Numbers {
+          type One = typeof Numbers.One;
+          type Two = typeof Numbers.Two;
+          type FortyTwo = typeof Numbers.FortyTwo;
+          type FortyThree = typeof Numbers.FortyThree;
+        }
         `,
     );
   });
-  await it('should transform an enum duplicate number values', async () => {
+  await it.only('should transform an enum duplicate number values', async () => {
     await scenario(
       'enum NumbersI18n { Two = 2, Three, Deux = 2, Trois }',
       `
-        type NumbersI18n = 2 | 3;
-        type NumbersI18nKeys = 'Two' | 'Three' | 'Deux' | 'Trois';
         const NumbersI18n = {
           2: 'Deux',
           3: 'Trois',
@@ -111,31 +90,32 @@ describe(transformEnum.name, async () => {
           Three: 3,
           Deux: 2,
           Trois: 3
-          } satisfies Record<NumbersI18n, NumbersI18nKeys> & Record<NumbersI18nKeys, NumbersI18n>;
-          declare namespace NumbersI18n {
-            type Two = typeof NumbersI18n.Two;
-            type Three = typeof NumbersI18n.Three;
-            type Deux = typeof NumbersI18n.Deux;
-            type Trois = typeof NumbersI18n.Trois;
-          }
+        } as const;
+        type NumbersI18n = typeof NumbersI18n[keyof typeof NumbersI18n & string];
+        declare namespace NumbersI18n {
+          type Two = typeof NumbersI18n.Two;
+          type Three = typeof NumbersI18n.Three;
+          type Deux = typeof NumbersI18n.Deux;
+          type Trois = typeof NumbersI18n.Trois;
+        }
         `,
     );
   });
 
-  await it('should transform a string enum', async () => {
+  await it.only('should transform a string enum', async () => {
     await scenario(
       'enum Foo { Bar = "bar", Baz = "baz" }',
-      `type Foo = 'bar' | 'baz';
-         type FooKeys = 'Bar' | 'Baz';
-         const Foo = {
-           Bar: 'bar',
-           Baz: 'baz',
-         } satisfies Record<FooKeys, Foo>;
-         declare namespace Foo {
-           type Bar = typeof Foo.Bar;
-           type Baz = typeof Foo.Baz;
-         }
-           `,
+      `
+      const Foo = {
+        Bar: 'bar',
+        Baz: 'baz',
+      } as const;
+      type Foo = typeof Foo[keyof typeof Foo];
+      declare namespace Foo {
+        type Bar = typeof Foo.Bar;
+        type Baz = typeof Foo.Baz;
+      }
+      `,
     );
   });
   await it('should transform a mixed enum (strings and numbers)', async () => {
