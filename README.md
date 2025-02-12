@@ -112,7 +112,7 @@ The property type annotations are left out, as the TypeScript compiler infers th
 
 ### Enum transformations
 
-An enum transforms to 4 components. The goal is to get as close to a drop-in replacement as possible, without transforming the consuming side of enums.
+An enum transforms to 3 components. The goal is to get as close to a drop-in replacement as possible, _without transforming the consuming side of enums_.
 
 Input:
 
@@ -129,14 +129,13 @@ enum Message {
 Type-annotationifies as:
 
 ```ts
-type Message = 0 | 1;
-type MessageKeys = 'Start' | 'Stop';
 const Message = {
   0: 'Start',
   1: 'Stop',
   Start: 0,
   Stop: 1,
-} satisfies Record<Message, MessageKeys> & Record<MessageKeys, Message>;
+} as const;
+type Message = (typeof Message)[keyof typeof Message & string];
 declare namespace Message {
   type Start = typeof Message.Start;
   type Stop = typeof Message.Stop;
@@ -145,10 +144,22 @@ declare namespace Message {
 
 That's a mouthful. Let's break down each part.
 
-- `type Message = 0 | 1` \
-  This allows you to use `Message` as a type: `let message: Message`. The backing value of the enum was a number (`0` or `1`), so thats what is used here.
-- `type MessageKeys = 'Start' | 'Stop'` \
-  This is a convenience type alias used in the object literal later.
+- The object literal
+  ```ts
+  const Message = {
+    0: 'Start',
+    1: 'Stop',
+    Start: 0,
+    Stop: 1,
+  } as const;
+  ```
+  This allows you to use `Message` as a value: `let message = Message.Start`. This is the actual JS footprint of the enum. The `as const` assertion, but makes sure we can use `typeof Message.Start`.
+- `type Message = (typeof Message)[keyof typeof Message & string];` \
+  This allows you to use `Message` as a type: `let message: Message`. Let's break it down further:
+  - `typeof Message` means the object shape `{0: 'Start', 1: 'Stop', Start: 0, Stop: 1 }`
+  - `keyof typeof Message` means the keys of that object: `'0' | '1' | 'Start' | 'Stop'`
+  - `& string` filters out the keys that are also strings: `'Start' | 'Stop'`
+  - `(typeof Message)[keyof typeof Message & string]` means the type of the values of the object with the keys `'Start' | 'Stop'`, so only values `'0' | '1'`. This was the backing value of the original enum.
 - The object literal
   ```ts
   const Message = {
@@ -159,7 +170,7 @@ That's a mouthful. Let's break down each part.
   } satisfies Record<Message, MessageKeys> & Record<MessageKeys, Message>;
   ```
   This allows you to use `Message` as a value: `let message = Message.Start`. This is the actual JS footprint of the enum. The `satisfies` operator isn't strictly necessary, but makes sure the `Message` type and `Message` value are kept in sync if you decide to change the `Message` "enum" later.
-- The namespace
+- The `declare namespace`
   ```ts
   declare namespace Message {
     type Start = typeof Message.Start;
