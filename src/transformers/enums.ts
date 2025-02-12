@@ -1,8 +1,9 @@
 import ts from 'typescript';
-import type { TransformResult } from '../transform.ts';
+import type { TransformOptions, TransformResult } from '../transform.ts';
 
 export function transformEnum(
   enumDeclaration: ts.EnumDeclaration,
+  { enumNamespaceDeclaration }: Readonly<TransformOptions>,
 ): TransformResult<ts.Node[]> {
   let initValue: number | string = 0;
   const enumValueMap = new Map(
@@ -39,10 +40,12 @@ export function transformEnum(
     // Type alias for values: type MessageKind = typeof MessageKind[keyof typeof MessageKind & string];
     createTypeAlias(enumDeclaration),
   ];
-  // Finish with the namespace declaration: declare namespace MessageKind { type Start = typeof MessageKind.Start; ... }
-  const moduleDeclaration = createModuleDeclarationIfNeeded(enumDeclaration);
-  if (moduleDeclaration) {
-    nodes.push(moduleDeclaration);
+  if (enumNamespaceDeclaration) {
+    // Finish with the namespace declaration: declare namespace MessageKind { type Start = typeof MessageKind.Start; ... }
+    const moduleDeclaration = createModuleDeclarationIfNeeded(enumDeclaration);
+    if (moduleDeclaration) {
+      nodes.push(moduleDeclaration);
+    }
   }
 
   return {

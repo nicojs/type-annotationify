@@ -20,8 +20,17 @@ export interface TransformResult<TNode extends ts.Node | ts.Node[]> {
   node: TNode;
 }
 
+export interface TransformOptions {
+  enumNamespaceDeclaration: boolean;
+}
+
+export const DEFAULT_OPTIONS: Readonly<TransformOptions> = Object.freeze({
+  enumNamespaceDeclaration: true,
+});
+
 export function transform(
   source: ts.SourceFile,
+  options = DEFAULT_OPTIONS,
 ): TransformResult<ts.SourceFile> {
   let changed = false;
   return {
@@ -37,7 +46,7 @@ export function transform(
       resultingNode = result.node;
     }
     if (ts.isEnumDeclaration(node)) {
-      const result = transformEnum(node);
+      const result = transformEnum(node, options);
       changed ||= result.changed;
       resultingNode = result.node;
     }

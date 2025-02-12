@@ -38,7 +38,7 @@ npx type-annotationify@latest
 ## Usage
 
 ```bash
-type-annotationify <pattern-to-typescript-files>
+type-annotationify [options] <pattern-to-typescript-files>
 ```
 
 The default pattern is `**/!(*.d).?(m|c)ts?(x)`, excluding 'node_modules'.
@@ -47,6 +47,27 @@ This will convert all the TypeScript files that match the pattern to type-annota
 
 > [!TIP]
 > Running `type-annotationify` will rewrite your TypeScript files without taking your formatting into account. It is recommended to run `prettier` or another formatter after running `type-annotationify`. If you use manual formatting, it might be faster to do the work yourself
+
+## Options
+
+### `--no-enum-namespace-declaration`
+
+Disable the `declare namespace` output for enums. For example:
+
+```ts
+// ❌ Disable this output for enums
+declare namespace Message {
+  type Start = typeof Message.Start;
+  type Stop = typeof Message.Stop;
+}
+```
+
+This makes it so you can't use enum values (i.e. `Message.Start`) as a type, but means a far cleaner output in general. This might result in compile errors, which are pretty easy to fix yourself:
+
+```diff
+- let message: Message.Start;
++ let message: typeof Message.Start;
+```
 
 ## Transformations
 
@@ -123,7 +144,7 @@ enum Message {
 }
 ```
 
-> !NOTE
+> [!NOTE]
 > String enums are also supported.
 
 Type-annotationifies as:
@@ -167,7 +188,7 @@ That's a mouthful. Let's break down each part.
     type Stop = typeof Message.Stop;
   }
   ```
-  This allows you to use `Message.Start` as a type: `let message: Message.Start`.
+  This allows you to use `Message.Start` as a type: `let message: Message.Start`. This can be disabled with the `--no-enum-namespace-declaration` option.
 
 #### Enum transformation limitations
 
