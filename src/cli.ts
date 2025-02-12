@@ -3,7 +3,14 @@ import fs from 'fs/promises';
 import { parse, print, transform } from './transform.ts';
 
 export async function runTypeAnnotationify(args: string[]) {
-  const { positionals } = parseArgs({ args, allowPositionals: true });
+  const { positionals, values: options } = parseArgs({
+    args,
+    options: {
+      'enum-namespace-declaration': { type: 'boolean', default: true },
+    },
+    allowPositionals: true,
+    allowNegative: true,
+  });
   const patterns: string[] = [...positionals];
   if (patterns.length === 0) {
     patterns.push('**/!(*.d).?(m|c)ts?(x)');
@@ -17,7 +24,9 @@ export async function runTypeAnnotationify(args: string[]) {
       (async () => {
         const content = await fs.readFile(file, 'utf-8');
         const sourceFile = parse(file, content);
-        const { node, changed } = transform(sourceFile);
+        const { node, changed } = transform(sourceFile, {
+          enumNamespaceDeclaration: options['enum-namespace-declaration'],
+        });
         if (changed) {
           const transformedContent = print(node);
           await fs.writeFile(file, transformedContent);

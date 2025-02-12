@@ -1,5 +1,10 @@
 import ts from 'typescript';
-import { parse, transform } from './transform.ts';
+import {
+  DEFAULT_OPTIONS,
+  parse,
+  transform,
+  type TransformOptions,
+} from './transform.ts';
 import assert from 'node:assert/strict';
 import * as prettier from 'prettier';
 import { describe, it } from 'node:test';
@@ -13,12 +18,6 @@ describe('transform', async () => {
       `class Iban {
           constructor(bankCode: string) {}
           }`,
-      `
-    class Iban {
-          constructor(bankCode: string) {}
-          }
-          `,
-      false,
     );
   });
   await describe('parameter properties', async () => {
@@ -205,11 +204,12 @@ describe('transform', async () => {
 export async function scenario(
   input: string,
   expectedOutput = input,
-  expectedChanged = input !== expectedOutput,
+  options: TransformOptions = DEFAULT_OPTIONS,
 ) {
+  const expectedChanged = input !== expectedOutput;
   const source = parse(IMAGINARY_FILE_NAME, input);
   const expected = parse(IMAGINARY_FILE_NAME, expectedOutput);
-  const actualTransformResult = transform(source);
+  const actualTransformResult = transform(source, options);
   const actualCodeUnformatted = printer.printFile(actualTransformResult.node);
   const actualCode = await prettier.format(actualCodeUnformatted, {
     filepath: IMAGINARY_FILE_NAME,

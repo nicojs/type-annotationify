@@ -37,6 +37,20 @@ describe(transformEnum.name, async () => {
     );
   });
 
+  await it('should not emit a namespace declaration when enumNamespaceDeclaration is disabled', async () => {
+    await scenario(
+      'enum MessageKind { Start }',
+      `
+      const MessageKind = {
+        0: 'Start',
+        Start: 0,
+      } as const;
+      type MessageKind = typeof MessageKind[keyof typeof MessageKind & string];
+      `,
+      { enumNamespaceDeclaration: false },
+    );
+  });
+
   await it('should transform an enum with number initializers', async () => {
     await scenario(
       'enum Rank { Two = 2, Three = 3 }',
