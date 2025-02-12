@@ -157,19 +157,9 @@ That's a mouthful. Let's break down each part.
 - `type Message = (typeof Message)[keyof typeof Message & string];` \
   This allows you to use `Message` as a type: `let message: Message`. Let's break it down further:
   - `typeof Message` means the object shape `{0: 'Start', 1: 'Stop', Start: 0, Stop: 1 }`
-  - `keyof typeof Message` means the keys of that object: `'0' | '1' | 'Start' | 'Stop'`
+  - `keyof typeof Message` means the keys of that object: `0 | 1 | 'Start' | 'Stop'`
   - `& string` filters out the keys that are also strings: `'Start' | 'Stop'`
-  - `(typeof Message)[keyof typeof Message & string]` means the type of the values of the object with the keys `'Start' | 'Stop'`, so only values `'0' | '1'`. This was the backing value of the original enum.
-- The object literal
-  ```ts
-  const Message = {
-    0: 'Start',
-    1: 'Stop',
-    Start: 0,
-    Stop: 1,
-  } satisfies Record<Message, MessageKeys> & Record<MessageKeys, Message>;
-  ```
-  This allows you to use `Message` as a value: `let message = Message.Start`. This is the actual JS footprint of the enum. The `satisfies` operator isn't strictly necessary, but makes sure the `Message` type and `Message` value are kept in sync if you decide to change the `Message` "enum" later.
+  - `(typeof Message)[keyof typeof Message & string]` means the type of the values of the object with the keys `'Start' | 'Stop'`, so only values `0 | 1`. This was the backing value of the original enum.
 - The `declare namespace`
   ```ts
   declare namespace Message {
