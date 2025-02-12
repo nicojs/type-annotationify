@@ -32,23 +32,12 @@ export function transformEnum(
         ] as const,
     ),
   );
-  const keysUnionName = ts.factory.createUniqueName(
-    `${enumDeclaration.name.text}Keys`,
-    ts.GeneratedIdentifierFlags.Optimistic,
-  );
 
   const nodes = [
-    // Type alias for values: type MessageKind = 0 | 1 | 2;
-    createTypeAlias(enumDeclaration, enumValueMap),
-    // Type alias for keys: type MessageKindKeys = 'Start' | 'Work' | 'Stop';
-    createTypeAliasForNames(keysUnionName, enumDeclaration, enumNameMap),
-    // Object literal: const MessageKind = { 0: 'Start', 1: 'Work', 2: 'Stop', Start: 0, Work: 1, Stop: 2 };
-    createObjectLiteral(
-      enumDeclaration,
-      enumValueMap,
-      enumNameMap,
-      keysUnionName,
-    ),
+    // Object literal: const MessageKind = { 0: 'Start', 1: 'Work', 2: 'Stop', Start: 0, Work: 1, Stop: 2 } as const;
+    createObjectLiteral(enumDeclaration, enumValueMap, enumNameMap),
+    // Type alias for values: type MessageKind = typeof MessageKind[keyof typeof MessageKind & string];
+    createTypeAlias(enumDeclaration),
   ];
   // Finish with the namespace declaration: declare namespace MessageKind { type Start = typeof MessageKind.Start; ... }
   const moduleDeclaration = createModuleDeclarationIfNeeded(enumDeclaration);
@@ -103,7 +92,6 @@ function createObjectLiteral(
   enumDeclaration: ts.EnumDeclaration,
   enumValueMap: Map<ts.EnumMember, number | string>,
   enumNameMap: Map<ts.EnumMember, ts.StringLiteral>,
-  keysUnionName: ts.Identifier,
 ): ts.Node {
   // An enum may have duplicate values, but an object literal doesn't allow duplicate keys
   // Ex. enum NumbersI18n { Two = 2, Three, Deux = 2, Trois }, should be transformed to: const NumbersI18n = { 2: 'Deux', 3: 'Trois', ... }
@@ -122,7 +110,7 @@ function createObjectLiteral(
           enumDeclaration.name,
           undefined,
           undefined,
-          ts.factory.createSatisfiesExpression(
+          ts.factory.createAsExpression(
             ts.factory.createObjectLiteralExpression(
               [
                 ...[...memberMap.entries()]
@@ -142,12 +130,7 @@ function createObjectLiteral(
               ],
               true,
             ),
-            // Tag with satisfies: Record<MessageKind, MessageKindKeys> & Record<MessageKindKeys, MessageKind>;
-            createSatisfiesTypeTarget(
-              enumDeclaration,
-              keysUnionName,
-              enumValueMap,
-            ),
+            ts.factory.createTypeReferenceNode('const'),
           ),
         ),
       ],
@@ -163,54 +146,26 @@ function createModifiers(enumModifiers?: ts.NodeArray<ts.ModifierLike>) {
   return enumModifiers.filter((mod) => mod.kind !== ts.SyntaxKind.ConstKeyword);
 }
 
-function createSatisfiesTypeTarget(
-  enumDeclaration: ts.EnumDeclaration,
-  keysUnionName: ts.Identifier,
-  enumValueMap: Map<ts.EnumMember, string | number>,
-): ts.TypeNode {
-  // If this is a string enum, we simply don't create a reverse mapping
-  if (enumValueMap.values().every((value) => typeof value === 'string')) {
-    return createRecord(keysUnionName, enumDeclaration.name);
-  }
-  // If this is a mixed enum, we exclude the strings from reverse mapping
-  const excluded = [...enumValueMap.values()]
-    .filter((val) => typeof val === 'string')
-    .map((val) =>
-      ts.factory.createLiteralTypeNode(ts.factory.createStringLiteral(val)),
-    );
-  // Create an intersection between the two records (mapping and reverse mapping)
-  return ts.factory.createIntersectionTypeNode([
-    excluded.length
-      ? ts.factory.createTypeReferenceNode('Record', [
-          ts.factory.createTypeReferenceNode('Exclude', [
-            ts.factory.createTypeReferenceNode(enumDeclaration.name),
-            ts.factory.createUnionTypeNode(excluded),
-          ]),
-          ts.factory.createTypeReferenceNode(keysUnionName),
-        ])
-      : createRecord(enumDeclaration.name, keysUnionName),
-    createRecord(keysUnionName, enumDeclaration.name),
-  ]);
-}
-
-function createRecord(from: ts.Identifier, to: ts.Identifier) {
-  return ts.factory.createTypeReferenceNode('Record', [
-    ts.factory.createTypeReferenceNode(from),
-    ts.factory.createTypeReferenceNode(to),
-  ]);
-}
-
-function createTypeAlias(
-  enumDeclaration: ts.EnumDeclaration,
-  enumValueMap: Map<ts.EnumMember, number | string>,
-): ts.Node {
-  const values = [...new Set(enumValueMap.values())];
+function createTypeAlias(enumDeclaration: ts.EnumDeclaration): ts.Node {
+  const isStringEnum = enumDeclaration.members.every(
+    (member) => member.initializer && ts.isStringLiteral(member.initializer),
+  );
+  const keyOfTypeOperator = ts.factory.createTypeOperatorNode(
+    ts.SyntaxKind.KeyOfKeyword,
+    ts.factory.createTypeQueryNode(enumDeclaration.name),
+  );
   return ts.factory.createTypeAliasDeclaration(
     createModifiers(enumDeclaration.modifiers),
     enumDeclaration.name,
     undefined,
-    ts.factory.createUnionTypeNode(
-      values.map((val) => ts.factory.createLiteralTypeNode(createLiteral(val))),
+    ts.factory.createIndexedAccessTypeNode(
+      ts.factory.createTypeQueryNode(enumDeclaration.name),
+      isStringEnum
+        ? keyOfTypeOperator
+        : ts.factory.createIntersectionTypeNode([
+            keyOfTypeOperator,
+            ts.factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword),
+          ]),
     ),
   );
 }
@@ -219,21 +174,4 @@ function createLiteral(value: string | number) {
   return typeof value === 'number'
     ? ts.factory.createNumericLiteral(value)
     : ts.factory.createStringLiteral(value);
-}
-
-function createTypeAliasForNames(
-  keysUnionName: ts.Identifier,
-  enumDeclaration: ts.EnumDeclaration,
-  enumNameMap: Map<ts.EnumMember, ts.StringLiteral>,
-): ts.Node {
-  return ts.factory.createTypeAliasDeclaration(
-    undefined,
-    keysUnionName,
-    undefined,
-    ts.factory.createUnionTypeNode(
-      enumDeclaration.members.map((member) =>
-        ts.factory.createLiteralTypeNode(enumNameMap.get(member)!),
-      ),
-    ),
-  );
 }
