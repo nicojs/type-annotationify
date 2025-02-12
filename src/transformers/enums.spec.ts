@@ -79,7 +79,7 @@ describe(transformEnum.name, async () => {
         `,
     );
   });
-  await it.only('should transform an enum duplicate number values', async () => {
+  await it('should transform an enum duplicate number values', async () => {
     await scenario(
       'enum NumbersI18n { Two = 2, Three, Deux = 2, Trois }',
       `
@@ -102,7 +102,7 @@ describe(transformEnum.name, async () => {
     );
   });
 
-  await it.only('should transform a string enum', async () => {
+  await it('should transform a string enum', async () => {
     await scenario(
       'enum Foo { Bar = "bar", Baz = "baz" }',
       `
@@ -121,37 +121,36 @@ describe(transformEnum.name, async () => {
   await it('should transform a mixed enum (strings and numbers)', async () => {
     await scenario(
       'enum Foo { A = "a", One = 1, Two, B = "b"}',
-      `type Foo = 'a'| 1 | 2 | 'b';
-         type FooKeys = 'A' | 'One' | 'Two' | 'B';
-         const Foo = {
-            1: 'One',
-            2: 'Two',
-            A: 'a',
-            One: 1,
-            Two: 2,
-            B: 'b',
-         } satisfies Record<Exclude<Foo, 'a' | 'b'>, FooKeys> & Record<FooKeys, Foo>;
-          declare namespace Foo {
-            type A = typeof Foo.A;
-            type One = typeof Foo.One;
-            type Two = typeof Foo.Two;
-            type B = typeof Foo.B;
-          }
-         `,
+      `
+      const Foo = {
+        1: 'One',
+        2: 'Two',
+        A: 'a',
+        One: 1,
+        Two: 2,
+        B: 'b',
+        } as const;
+        type Foo = typeof Foo[keyof typeof Foo & string];
+        declare namespace Foo {
+          type A = typeof Foo.A;
+          type One = typeof Foo.One;
+          type Two = typeof Foo.Two;
+          type B = typeof Foo.B;
+        }
+        `,
     );
   });
   await it('should transform a computed property name enum', async () => {
     await scenario(
       'enum PathSeparator { ["/"], ["\\\\"] }',
       `
-      type PathSeparator = 0 | 1;
-      type PathSeparatorKeys = '/' | '\\\\';
       const PathSeparator = {
         0: '/',
         1: '\\\\',
         '/': 0,
         '\\\\': 1
-        } satisfies Record<PathSeparator, PathSeparatorKeys> & Record<PathSeparatorKeys, PathSeparator>;
+      } as const;
+      type PathSeparator = typeof PathSeparator[keyof typeof PathSeparator & string];
       `,
     );
   });
@@ -159,19 +158,19 @@ describe(transformEnum.name, async () => {
   await it('should support const enums', async () => {
     await scenario(
       'const enum Foo { Bar, Baz }',
-      `type Foo = 0 | 1;
-         type FooKeys = 'Bar' | 'Baz';
-         const Foo = {
-           0: 'Bar',
-           1: 'Baz',
-           Bar: 0,
-           Baz: 1,
-         } satisfies Record<Foo, FooKeys> & Record<FooKeys, Foo>;
-         declare namespace Foo {
-           type Bar = typeof Foo.Bar;
-           type Baz = typeof Foo.Baz;
-         }
-         `,
+      `
+      const Foo = {
+        0: 'Bar',
+        1: 'Baz',
+        Bar: 0,
+        Baz: 1,
+      } as const;
+      type Foo = typeof Foo[keyof typeof Foo & string];
+      declare namespace Foo {
+        type Bar = typeof Foo.Bar;
+        type Baz = typeof Foo.Baz;
+      }
+      `,
     );
   });
 });

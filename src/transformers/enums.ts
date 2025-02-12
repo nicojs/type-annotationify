@@ -147,19 +147,25 @@ function createModifiers(enumModifiers?: ts.NodeArray<ts.ModifierLike>) {
 }
 
 function createTypeAlias(enumDeclaration: ts.EnumDeclaration): ts.Node {
+  const isStringEnum = enumDeclaration.members.every(
+    (member) => member.initializer && ts.isStringLiteral(member.initializer),
+  );
+  const keyOfTypeOperator = ts.factory.createTypeOperatorNode(
+    ts.SyntaxKind.KeyOfKeyword,
+    ts.factory.createTypeQueryNode(enumDeclaration.name),
+  );
   return ts.factory.createTypeAliasDeclaration(
     createModifiers(enumDeclaration.modifiers),
     enumDeclaration.name,
     undefined,
     ts.factory.createIndexedAccessTypeNode(
       ts.factory.createTypeQueryNode(enumDeclaration.name),
-      ts.factory.createIntersectionTypeNode([
-        ts.factory.createTypeOperatorNode(
-          ts.SyntaxKind.KeyOfKeyword,
-          ts.factory.createTypeQueryNode(enumDeclaration.name),
-        ),
-        ts.factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword),
-      ]),
+      isStringEnum
+        ? keyOfTypeOperator
+        : ts.factory.createIntersectionTypeNode([
+            keyOfTypeOperator,
+            ts.factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword),
+          ]),
     ),
   );
 }
