@@ -1,12 +1,20 @@
-import { parse, transform, print } from "type-annotationify/dist/transform.js";
+import {
+  parse,
+  transform,
+  print,
+  TransformOptions,
+} from "type-annotationify/dist/transform.js";
 const input = document.getElementById("input") as HTMLInputElement;
 const output = document.getElementById("output") as HTMLTextAreaElement;
 const form = document.querySelector("form")!;
+const options: TransformOptions = {
+  enumNamespaceDeclaration: true,
+};
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const code = input.value;
   const parsed = parse("ts.ts", code);
-  const { changed, node } = transform(parsed);
+  const { changed, node } = transform(parsed, options);
   if (changed) {
     const printed = print(node);
     output.value = printed;
@@ -77,8 +85,16 @@ function bindDemo(id: string, demo: string) {
     submitForm();
   });
 }
+function bindOption(id: string, key: keyof TransformOptions, negate = false) {
+  const checkbox = document.getElementById(id) as HTMLInputElement;
+  checkbox.addEventListener("change", () => {
+    options[key] = checkbox.checked !== negate;
+    submitForm();
+  });
+}
 bindDemo("type-assertions-demo", typeAssertionsDemo);
 bindDemo("enums-demo", enumDemo);
 bindDemo("general-demo", generalDemo);
 bindDemo("namespaces-demo", namespacesDemo);
 bindDemo("classes-demo", classDemo);
+bindOption("noEnumNamespaceDeclaration", "enumNamespaceDeclaration", true);
