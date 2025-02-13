@@ -204,7 +204,7 @@ describe('transform', async () => {
 export async function scenario(
   input: string,
   expectedOutput = input,
-  options: TransformOptions = DEFAULT_OPTIONS,
+  options?: Partial<TransformOptions>,
 ) {
   const expectedChanged = input !== expectedOutput;
   const source = parse(IMAGINARY_FILE_NAME, input);

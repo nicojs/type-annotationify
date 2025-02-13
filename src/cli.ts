@@ -7,6 +7,7 @@ export async function runTypeAnnotationify(args: string[]) {
     args,
     options: {
       'enum-namespace-declaration': { type: 'boolean', default: true },
+      'relative-import-extensions': { type: 'boolean', default: false },
     },
     allowPositionals: true,
     allowNegative: true,
@@ -26,6 +27,7 @@ export async function runTypeAnnotationify(args: string[]) {
         const sourceFile = parse(file, content);
         const { node, changed } = transform(sourceFile, {
           enumNamespaceDeclaration: options['enum-namespace-declaration'],
+          relativeImportExtensions: options['relative-import-extensions'],
         });
         if (changed) {
           const transformedContent = print(node);
