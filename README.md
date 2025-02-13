@@ -42,6 +42,7 @@ type-annotationify [options] <pattern-to-typescript-files>
 ```
 
 The default pattern is `**/!(*.d).?(m|c)ts?(x)`, excluding 'node_modules'.
+In other words, by default all TypeScript files are matched (also in subdirectories) except declaration files (d.ts).
 
 This will convert all the TypeScript files that match the pattern to type-annotated TypeScript files _in place_. So be sure to commit your code before running this tool.
 

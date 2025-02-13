@@ -22,6 +22,10 @@ export async function runTypeAnnotationify(args: string[]) {
       --no-enum-namespace-declaration  Don't emit "declare namespace..." when converting enum declarations.
       --relative-import-extensions     Convert relative imports from .js to .ts
       -h, --help                       Display this help message
+
+    Patterns:
+      Glob patterns to match files to transform. Defaults to '**/!(*.d).?(m|c)ts?(x)' (excluding node_modules). 
+      In other words, by default all TypeScript files are matched (also in subdirectories) except declaration files (d.ts). 
     `);
     return;
   }
