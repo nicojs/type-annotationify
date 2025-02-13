@@ -1,8 +1,10 @@
 {
-    "typescript.tsdk": "node_modules/typescript/lib",
-    "cSpell.language": "en",
-    "cSpell.words": [
-        "Annotationify",
-        "clazz"
-    ]
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "cSpell.language": "en",
+  "cSpell.words": [
+    "annotationification",
+    "annotationifies",
+    "Annotationify",
+    "clazz"
+  ]
 }
