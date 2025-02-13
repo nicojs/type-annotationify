@@ -15,17 +15,17 @@ Live demo: [nicojs.github.io/type-annotationify/](https://nicojs.github.io/type-
 
 👷‍♂️ Work in progress. This tool is still in development, and not all syntax transformations are supported yet.
 
-| Syntax                                      | Status | Notes                                               |
-| ------------------------------------------- | ------ | --------------------------------------------------- |
-| Parameter Properties                        | ✅     |                                                     |
-| Parameter Properties with `super()` call    | ✅     |                                                     |
-| Plain Enum                                  | ✅     |                                                     |
-| Number Enum                                 | ✅     |                                                     |
-| String Enum                                 | ✅     |                                                     |
-| Const Enum                                  | ✅     |                                                     |
-| Type assertion expressions                  | ✅     | I.e. `<string>value` --> `value as string`          |
-| Namespaces                                  | ✅     | With some limitations                               |
-| Rewrite file extensions in import specifier | ❌     | This might be included with an option in the future |
+| Syntax                                   | Status | Notes                                      |
+| ---------------------------------------- | ------ | ------------------------------------------ |
+| Parameter Properties                     | ✅     |                                            |
+| Parameter Properties with `super()` call | ✅     |                                            |
+| Plain Enum                               | ✅     |                                            |
+| Number Enum                              | ✅     |                                            |
+| String Enum                              | ✅     |                                            |
+| Const Enum                               | ✅     |                                            |
+| Type assertion expressions               | ✅     | I.e. `<string>value` --> `value as string` |
+| Namespaces                               | ✅     | With some limitations                      |
+| Rewrite relative import extensions       | ✅     | with `--relative-import-extensions`        |
 
 ## Installation
 
@@ -68,6 +68,10 @@ This makes it so you can't use enum values (i.e. `Message.Start`) as a type, but
 - let message: Message.Start;
 + let message: typeof Message.Start;
 ```
+
+### `--relative-import-extensions`
+
+Rewrite relative file extensions in import specifiers to `.ts`, `.cts` or `.mts`. See [Relative import extensions](#relative-import-extensions) for more info.
 
 ## Transformations
 
@@ -281,6 +285,27 @@ var Geometry: Geometry;
    + return Geometry.pi * radius ** 2;
    ```
 1. The `@ts-ignore` comments are necessary to make the namespace work. This is because there are a bunch of illegal TypeScript constructs needed, like declaring a namespace and a variable with the same name. This also means that _TypeScript_ is turned off entirely for these statements.
+
+### Relative import extensions
+
+You can let type-annotationify rewrite relative import extensions from `.js`, `.cjs` or `.mjs` to `.ts`, `.cts` or `.mts` respectively. Since this isn't strictly 'type-annotationification', you'll need to enable this using the `--relative-import-extensions` flag.
+
+Input
+
+```ts
+import { foo } from './foo.js';
+```
+
+Type-annotationifies as:
+
+```ts
+import { foo } from './foo.ts';
+```
+
+This is useful when you want to use the `--experimental-strip-types` flag in NodeJS to run your TS code directly, where in the past you needed to transpile it first.
+
+> [!TIP]
+> After you've rewritten your imports, you should not forget to enable `allowImportingTsExtensions` in your tsconfig. If you still want to transpile your code to `.js` with `tsc`, you will also should enable `rewriteRelativeImportExtensions` in your tsconfig.
 
 ## FAQ
 

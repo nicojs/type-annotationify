@@ -2,6 +2,7 @@ import ts from 'typescript';
 import { transformConstructorParameters } from './transformers/constructor-parameters.ts';
 import { transformEnum } from './transformers/enums.ts';
 import { transformNamespace } from './transformers/namespaces.ts';
+import { transformRelativeImportExtensions } from './transformers/import-extensions.ts';
 export function parse(fileName: string, content: string) {
   return ts.createSourceFile(
     fileName,
@@ -22,17 +23,20 @@ export interface TransformResult<TNode extends ts.Node | ts.Node[]> {
 
 export interface TransformOptions {
   enumNamespaceDeclaration: boolean;
+  relativeImportExtensions: boolean;
 }
 
 export const DEFAULT_OPTIONS: Readonly<TransformOptions> = Object.freeze({
   enumNamespaceDeclaration: true,
+  relativeImportExtensions: false,
 });
 
 export function transform(
   source: ts.SourceFile,
-  options = DEFAULT_OPTIONS,
+  overrides?: Partial<TransformOptions>,
 ): TransformResult<ts.SourceFile> {
   let changed = false;
+  const options = Object.freeze({ ...DEFAULT_OPTIONS, ...overrides });
   return {
     node: ts.visitEachChild(source, transformNode, undefined),
     changed,
@@ -56,6 +60,11 @@ export function transform(
     }
     if (ts.isModuleDeclaration(node)) {
       const result = transformNamespace(node);
+      changed ||= result.changed;
+      resultingNode = result.node;
+    }
+    if (ts.isImportDeclaration(node) || ts.isCallExpression(node)) {
+      const result = transformRelativeImportExtensions(node, options);
       changed ||= result.changed;
       resultingNode = result.node;
     }
