@@ -9,6 +9,7 @@ const output = document.getElementById("output") as HTMLTextAreaElement;
 const form = document.querySelector("form")!;
 const options: TransformOptions = {
   enumNamespaceDeclaration: true,
+  relativeImportExtensions: true,
 };
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -27,7 +28,9 @@ function submitForm() {
   form.dispatchEvent(new SubmitEvent("submit", { cancelable: true }));
 }
 
-const generalDemo = `class Point {
+const generalDemo = `import { log } from './logger.js';
+
+class Point {
     constructor(public x: number, public y: number) {
     }
 }
@@ -75,6 +78,21 @@ const namespacesDemo = `namespace Geometry {
     return pi * radius ** 2;
   }
 }`;
+const importDemo = `
+import './a.js';
+import { b } from './b.mjs';
+import c from './c.cjs';
+import * as d from './d.js';
+
+const e = import('./e.js');
+const f = import('./f.mjs');
+const g = import('./g.cjs');
+
+// Not touched, since these aren't relative imports
+import 'bare/h.js';
+import 'bare/i.mjs';
+import 'bare/j.cjs';
+`;
 
 input.value = generalDemo;
 submitForm();
@@ -97,4 +115,6 @@ bindDemo("enums-demo", enumDemo);
 bindDemo("general-demo", generalDemo);
 bindDemo("namespaces-demo", namespacesDemo);
 bindDemo("classes-demo", classDemo);
+bindDemo("import-demo", importDemo);
 bindOption("noEnumNamespaceDeclaration", "enumNamespaceDeclaration", true);
+bindOption("relativeImportExtensions", "relativeImportExtensions", false);

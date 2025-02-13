@@ -6,7 +6,7 @@
   "devDependencies": {
     "parcel": "^2.13.3",
     "process": "^0.11.10",
-    "type-annotationify": "^0.0.10",
+    "type-annotationify": "^0.0.11",
     "util": "^0.12.5"
   }
 }
