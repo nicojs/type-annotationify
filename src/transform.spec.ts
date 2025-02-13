@@ -1,10 +1,5 @@
 import ts from 'typescript';
-import {
-  DEFAULT_OPTIONS,
-  parse,
-  transform,
-  type TransformOptions,
-} from './transform.ts';
+import { parse, transform, type TransformOptions } from './transform.ts';
 import assert from 'node:assert/strict';
 import * as prettier from 'prettier';
 import { describe, it } from 'node:test';
