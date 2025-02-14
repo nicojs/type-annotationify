@@ -1,6 +1,6 @@
 import { parseArgs } from 'util';
 import fs from 'fs/promises';
-import { parse, print, transform } from './transform.ts';
+import { type TransformOptions, parse, print, transform } from './transform.ts';
 
 export async function runTypeAnnotationify(args: string[]) {
   const { positionals, values: options } = parseArgs({
@@ -36,6 +36,10 @@ export async function runTypeAnnotationify(args: string[]) {
   }
   const promises: Promise<void>[] = [];
   let untouched = 0;
+  const transformOptions: TransformOptions = {
+    enumNamespaceDeclaration: options['enum-namespace-declaration'],
+    relativeImportExtensions: options['relative-import-extensions'],
+  };
   for await (const file of fs.glob(patterns, {
     exclude: (fileName) => fileName === 'node_modules',
   })) {
@@ -43,14 +47,11 @@ export async function runTypeAnnotationify(args: string[]) {
       (async () => {
         const content = await fs.readFile(file, 'utf-8');
         const sourceFile = parse(file, content);
-        const { node, changed } = transform(sourceFile, {
-          enumNamespaceDeclaration: options['enum-namespace-declaration'],
-          relativeImportExtensions: options['relative-import-extensions'],
-        });
-        if (changed) {
+        const { node, report } = transform(sourceFile, transformOptions);
+        if (report.changed) {
           const transformedContent = print(node);
           await fs.writeFile(file, transformedContent);
-          console.log(`✅ (changed) ${file}`);
+          console.log(`✅ ${file} [${report.text}]`);
         } else {
           untouched++;
         }

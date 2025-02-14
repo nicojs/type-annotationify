@@ -1,9 +1,9 @@
 import ts from 'typescript';
-import type { TransformResult } from '../transform.ts';
+import type { TransformerResult } from './transformer-result.ts';
 
 export function transformConstructorParameters(
   clazz: ts.ClassDeclaration,
-): TransformResult<ts.ClassDeclaration> {
+): TransformerResult<ts.ClassDeclaration> {
   const constructor = clazz.members.find((member) =>
     ts.isConstructorDeclaration(member),
   );

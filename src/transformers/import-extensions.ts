@@ -1,10 +1,11 @@
 import ts from 'typescript';
-import type { TransformOptions, TransformResult } from '../transform.ts';
+import type { TransformOptions } from '../transform.ts';
+import type { TransformerResult } from './transformer-result.ts';
 
 export function transformRelativeImportExtensions(
   node: ts.ImportDeclaration | ts.CallExpression,
   options: Pick<TransformOptions, 'relativeImportExtensions'>,
-): TransformResult<ts.ImportDeclaration | ts.CallExpression> {
+): TransformerResult<ts.ImportDeclaration | ts.CallExpression> {
   if (!options.relativeImportExtensions) {
     return { changed: false, node };
   }
@@ -16,7 +17,7 @@ export function transformRelativeImportExtensions(
 
 function transformRelativeImportCallExpression(
   node: ts.CallExpression,
-): TransformResult<ts.ImportDeclaration | ts.CallExpression> {
+): TransformerResult<ts.ImportDeclaration | ts.CallExpression> {
   if (
     node.expression.kind !== ts.SyntaxKind.ImportKeyword ||
     !node.arguments[0] ||
@@ -41,7 +42,7 @@ function transformRelativeImportCallExpression(
 
 function transformRelativeImportDeclaration(
   node: ts.ImportDeclaration,
-): TransformResult<ts.ImportDeclaration> {
+): TransformerResult<ts.ImportDeclaration> {
   if (!ts.isStringLiteral(node.moduleSpecifier)) {
     return { changed: false, node: node };
   }

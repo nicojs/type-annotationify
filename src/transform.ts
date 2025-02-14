@@ -3,6 +3,7 @@ import { transformConstructorParameters } from './transformers/constructor-param
 import { transformEnum } from './transformers/enums.ts';
 import { transformNamespace } from './transformers/namespaces.ts';
 import { transformRelativeImportExtensions } from './transformers/import-extensions.ts';
+import { TransformChangesReport } from './transform-changes-report.ts';
 export function parse(fileName: string, content: string) {
   return ts.createSourceFile(
     fileName,
@@ -16,9 +17,9 @@ export function print(source: ts.SourceFile): string {
   return printer.printFile(source);
 }
 
-export interface TransformResult<TNode extends ts.Node | ts.Node[]> {
-  changed: boolean;
-  node: TNode;
+export interface TransformResult {
+  node: ts.SourceFile;
+  report: TransformChangesReport;
 }
 
 export interface TransformOptions {
@@ -34,38 +35,46 @@ export const DEFAULT_OPTIONS: Readonly<TransformOptions> = Object.freeze({
 export function transform(
   source: ts.SourceFile,
   overrides?: Partial<TransformOptions>,
-): TransformResult<ts.SourceFile> {
-  let changed = false;
+): TransformResult {
+  const report = new TransformChangesReport();
   const options = Object.freeze({ ...DEFAULT_OPTIONS, ...overrides });
   return {
     node: ts.visitEachChild(source, transformNode, undefined),
-    changed,
+    report,
   };
 
   function transformNode(node: ts.Node): ts.Node | ts.Node[] {
     let resultingNode: ts.Node | ts.Node[] = node;
     if (ts.isClassDeclaration(node)) {
       const result = transformConstructorParameters(node);
-      changed ||= result.changed;
+      if (result.changed) {
+        report.classConstructors++;
+      }
       resultingNode = result.node;
     }
     if (ts.isEnumDeclaration(node)) {
       const result = transformEnum(node, options);
-      changed ||= result.changed;
+      if (result.changed) {
+        report.enumDeclarations++;
+      }
       resultingNode = result.node;
     }
     if (ts.isTypeAssertionExpression(node)) {
       resultingNode = ts.factory.createAsExpression(node.expression, node.type);
-      changed = true;
+      report.typeAssertions++;
     }
     if (ts.isModuleDeclaration(node)) {
       const result = transformNamespace(node);
-      changed ||= result.changed;
+      if (result.changed) {
+        report.namespaceDeclarations++;
+      }
       resultingNode = result.node;
     }
     if (ts.isImportDeclaration(node) || ts.isCallExpression(node)) {
       const result = transformRelativeImportExtensions(node, options);
-      changed ||= result.changed;
+      if (result.changed) {
+        report.relativeImportExtensions++;
+      }
       resultingNode = result.node;
     }
     if (Array.isArray(resultingNode)) {
