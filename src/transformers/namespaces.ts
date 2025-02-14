@@ -1,10 +1,10 @@
 import ts, { isTypeReferenceNode, type Identifier } from 'typescript';
-import { type TransformResult } from '../transform.ts';
+import type { TransformerResult } from './transformer-result.ts';
 const IGNORE_COMMENT = ' @ts-ignore Migrated namespace with type-annotationify';
 
 export function transformNamespace(
   namespace: ts.ModuleDeclaration,
-): TransformResult<ts.Node[] | ts.ModuleDeclaration> {
+): TransformerResult<ts.Node[] | ts.ModuleDeclaration> {
   // Don't transpile empty namespaces
   if (
     namespace.modifiers?.some(

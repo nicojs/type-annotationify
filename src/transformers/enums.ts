@@ -1,10 +1,11 @@
 import ts from 'typescript';
-import type { TransformOptions, TransformResult } from '../transform.ts';
+import type { TransformOptions } from '../transform.ts';
+import type { TransformerResult } from './transformer-result.ts';
 
 export function transformEnum(
   enumDeclaration: ts.EnumDeclaration,
   { enumNamespaceDeclaration }: Readonly<TransformOptions>,
-): TransformResult<ts.Node[]> {
+): TransformerResult<ts.Node[]> {
   let initValue: number | string = 0;
   const enumValueMap = new Map(
     enumDeclaration.members.map((member) => {
