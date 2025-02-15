@@ -11,7 +11,7 @@ describe(runTypeAnnotationifyCli.name, async () => {
   class Context {
     parse = parse;
     print = print;
-    transform = transform;
+    transform = sinon.spy(transform);
     log = sinon.stub<
       Parameters<typeof console.log>,
       ReturnType<typeof console.log>
@@ -61,6 +61,7 @@ describe(runTypeAnnotationifyCli.name, async () => {
     });
     const exclude = context.glob.args[0]![1].exclude!;
     assert.equal(exclude('node_modules'), true);
+    assert.equal(exclude('something_else'), false);
   });
 
   await it('should default use the default pattern', async () => {
@@ -91,6 +92,7 @@ describe(runTypeAnnotationifyCli.name, async () => {
     context.glob.returns(new AsyncFileIterable(['src/cli.ts']));
     context.readFile.resolves('const foo = <string>JSON.parse(`"hello"`);');
     await act();
+    sinon.assert.calledOnceWithExactly(context.readFile, 'src/cli.ts', 'utf-8');
     sinon.assert.calledOnceWithExactly(
       context.writeFile,
       'src/cli.ts',
@@ -127,6 +129,49 @@ describe(runTypeAnnotationifyCli.name, async () => {
     sinon.assert.calledWith(
       context.log,
       `🎉 2 files transformed (0 untouched)`,
+    );
+  });
+
+  await it('should use default options when no options are provided', async () => {
+    context.glob.returns(new AsyncFileIterable(['src/foo.ts']));
+    context.readFile.resolves('const foo = <string>JSON.parse(`"hello"`);');
+    await act();
+    sinon.assert.calledWithMatch(
+      context.transform,
+      sinon.match.any,
+      DEFAULT_OPTIONS,
+    );
+  });
+  await it('should set enumNamespaceDeclaration to false when `--no-enum-namespace-declaration` is set', async () => {
+    context.glob.returns(new AsyncFileIterable(['src/foo.ts']));
+    context.readFile.resolves('');
+    await act(['--no-enum-namespace-declaration']);
+    sinon.assert.calledWithMatch(context.transform, sinon.match.any, {
+      ...DEFAULT_OPTIONS,
+      enumNamespaceDeclaration: false,
+    });
+  });
+  await it('should set relativeImportExtensions to true when `--relative-import-extensions` is set', async () => {
+    context.glob.returns(new AsyncFileIterable(['src/foo.ts']));
+    context.readFile.resolves('');
+    await act(['--relative-import-extensions']);
+    sinon.assert.calledWithMatch(context.transform, sinon.match.any, {
+      ...DEFAULT_OPTIONS,
+      relativeImportExtensions: true,
+    });
+  });
+
+  await it.only('should only report files when `--dry` is set', async () => {
+    context.glob.returns(new AsyncFileIterable(['src/foo.ts']));
+    context.readFile.resolves('const foo = <string>JSON.parse(`"hello"`);');
+    await act(['--dry']);
+    sinon.assert.notCalled(context.writeFile);
+    const report = new TransformChangesReport();
+    report.typeAssertions++;
+    sinon.assert.calledWith(context.log, `🚀 src/foo.ts [${report.text}]`);
+    sinon.assert.calledWith(
+      context.log,
+      `🎉 1 file would have been transformed (0 untouched)`,
     );
   });
 

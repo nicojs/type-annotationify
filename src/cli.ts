@@ -33,6 +33,7 @@ export async function runTypeAnnotationifyCli(
     options: {
       'enum-namespace-declaration': { type: 'boolean', default: true },
       'relative-import-extensions': { type: 'boolean', default: false },
+      dry: { type: 'boolean', default: false },
       help: { type: 'boolean', short: 'h' },
     },
     allowPositionals: true,
@@ -44,6 +45,7 @@ export async function runTypeAnnotationifyCli(
     Usage: type-annotationify [options] [patterns]
 
     Options:
+      --dry                            Don't write the transformed files to disk, perform a test run only.
       --no-enum-namespace-declaration  Don't emit "declare namespace..." when converting enum declarations.
       --relative-import-extensions     Convert relative imports from .js to .ts
       -h, --help                       Display this help message
@@ -74,9 +76,13 @@ export async function runTypeAnnotationifyCli(
         const sourceFile = parse(file, content);
         const { node, report } = transform(sourceFile, transformOptions);
         if (report.changed) {
-          const transformedContent = print(node);
-          await writeFile(file, transformedContent);
-          log(`✅ ${file} [${report.text}]`);
+          if (options.dry) {
+            log(`🚀 ${file} [${report.text}]`);
+          } else {
+            const transformedContent = print(node);
+            await writeFile(file, transformedContent);
+            log(`✅ ${file} [${report.text}]`);
+          }
         } else {
           untouched++;
         }
@@ -86,6 +92,6 @@ export async function runTypeAnnotationifyCli(
   await Promise.allSettled(promises);
   const transformed = promises.length - untouched;
   log(
-    `🎉 ${transformed} file${transformed === 1 ? '' : 's'} transformed (${untouched} untouched)`,
+    `🎉 ${transformed} file${transformed === 1 ? '' : 's'}${options.dry ? ' would have been' : ''} transformed (${untouched} untouched)`,
   );
 }
