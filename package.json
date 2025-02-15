@@ -30,6 +30,7 @@
     "format": "prettier --check src/**/*.ts README.md",
     "build": "tsc -b",
     "test": "node --test --experimental-strip-types --test-reporter=spec \"src/**/*.spec.ts\"",
+    "test:download-report": "curl -s --create-dirs -o reports/stryker-incremental.json https://dashboard.stryker-mutator.io/api/reports/github.com/nicojs/type-annotationify/main",
     "test:mutation": "stryker run"
   },
   "dependencies": {
