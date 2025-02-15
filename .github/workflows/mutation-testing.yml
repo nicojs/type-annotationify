@@ -1,7 +1,9 @@
-name: CI
-
+name: Mutation testing
 on:
-  push: main
+  push:
+    branches:
+      - main
+      - test/full-mutation-testing
 
 jobs:
   mutation_testing:
