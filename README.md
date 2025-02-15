@@ -13,8 +13,6 @@ Live demo: [nicojs.github.io/type-annotationify/](https://nicojs.github.io/type-
 
 ## Status
 
-👷‍♂️ Work in progress. This tool is still in development, and not all syntax transformations are supported yet.
-
 | Syntax                                   | Status | Notes                                      |
 | ---------------------------------------- | ------ | ------------------------------------------ |
 | Parameter Properties                     | ✅     |                                            |
