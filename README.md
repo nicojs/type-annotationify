@@ -51,6 +51,14 @@ This will convert all the TypeScript files that match the pattern to type-annota
 
 ## Options
 
+### `--dry`
+
+Don't write the changes to disk, but print changes that would have been made to the console.
+
+### `--help`
+
+Print the help message.
+
 ### `--no-enum-namespace-declaration`
 
 Disable the `declare namespace` output for enums. For example:

@@ -1,13 +1,39 @@
 import { parseArgs } from 'util';
 import fs from 'fs/promises';
 import { type TransformOptions, parse, print, transform } from './transform.ts';
+import type { GlobOptionsWithoutFileTypes } from 'fs';
 
-export async function runTypeAnnotationify(args: string[]) {
+/**
+ * Runs the type annotationify CLI.
+ * @param args The command line arguments to use.
+ * @param context The context with dependencies, used for testing.
+ * @returns
+ */
+export async function runTypeAnnotationifyCli(
+  args: string[],
+  context = {
+    parse,
+    print,
+    transform,
+    log: console.log,
+    glob: fs.glob as (
+      pattern: string[],
+      opt: GlobOptionsWithoutFileTypes,
+    ) => NodeJS.AsyncIterator<string>,
+    readFile: fs.readFile as (
+      fileName: string,
+      encoding: 'utf-8',
+    ) => Promise<string>,
+    writeFile: fs.writeFile,
+  },
+): Promise<void> {
+  const { parse, print, transform, log, glob, writeFile, readFile } = context;
   const { positionals, values: options } = parseArgs({
     args,
     options: {
       'enum-namespace-declaration': { type: 'boolean', default: true },
       'relative-import-extensions': { type: 'boolean', default: false },
+      dry: { type: 'boolean', default: false },
       help: { type: 'boolean', short: 'h' },
     },
     allowPositionals: true,
@@ -15,10 +41,11 @@ export async function runTypeAnnotationify(args: string[]) {
   });
 
   if (options.help) {
-    console.log(`
+    log(`
     Usage: type-annotationify [options] [patterns]
 
     Options:
+      --dry                            Don't write the transformed files to disk, perform a test run only.
       --no-enum-namespace-declaration  Don't emit "declare namespace..." when converting enum declarations.
       --relative-import-extensions     Convert relative imports from .js to .ts
       -h, --help                       Display this help message
@@ -40,18 +67,22 @@ export async function runTypeAnnotationify(args: string[]) {
     enumNamespaceDeclaration: options['enum-namespace-declaration'],
     relativeImportExtensions: options['relative-import-extensions'],
   };
-  for await (const file of fs.glob(patterns, {
+  for await (const file of glob(patterns, {
     exclude: (fileName) => fileName === 'node_modules',
   })) {
     promises.push(
       (async () => {
-        const content = await fs.readFile(file, 'utf-8');
+        const content = await readFile(file, 'utf-8');
         const sourceFile = parse(file, content);
         const { node, report } = transform(sourceFile, transformOptions);
         if (report.changed) {
-          const transformedContent = print(node);
-          await fs.writeFile(file, transformedContent);
-          console.log(`✅ ${file} [${report.text}]`);
+          if (options.dry) {
+            log(`🚀 ${file} [${report.text}]`);
+          } else {
+            const transformedContent = print(node);
+            await writeFile(file, transformedContent);
+            log(`✅ ${file} [${report.text}]`);
+          }
         } else {
           untouched++;
         }
@@ -59,7 +90,8 @@ export async function runTypeAnnotationify(args: string[]) {
     );
   }
   await Promise.allSettled(promises);
-  console.log(
-    `🎉 ${promises.length - untouched} files transformed (${untouched} untouched)`,
+  const transformed = promises.length - untouched;
+  log(
+    `🎉 ${transformed} file${transformed === 1 ? '' : 's'}${options.dry ? ' would have been' : ''} transformed (${untouched} untouched)`,
   );
 }

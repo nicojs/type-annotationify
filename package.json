@@ -29,7 +29,7 @@
     "format:fix": "npm run format -- --write",
     "format": "prettier --check src/**/*.ts README.md",
     "build": "tsc -b",
-    "test": "node --test --experimental-strip-types --test-reporter=spec src/**/*.spec.ts",
+    "test": "node --test --experimental-strip-types --test-reporter=spec \"src/**/*.spec.ts\"",
     "test:mutation": "stryker run"
   },
   "dependencies": {
@@ -37,7 +37,10 @@
   },
   "devDependencies": {
     "@stryker-mutator/tap-runner": "^8.7.1",
+    "@stryker-mutator/typescript-checker": "^8.7.1",
     "@types/node": "^22.10.5",
-    "prettier": "^3.4.2"
+    "@types/sinon": "^17.0.3",
+    "prettier": "^3.4.2",
+    "sinon": "^19.0.2"
   }
 }
