@@ -1,3 +1,3 @@
 #!/usr/bin/env node
-import { runTypeAnnotationify } from '../dist/cli.js';
-await runTypeAnnotationify(process.argv.slice(2));
+import { runTypeAnnotationifyCli } from '../dist/cli.js';
+await runTypeAnnotationifyCli(process.argv.slice(2));

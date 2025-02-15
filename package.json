@@ -38,6 +38,8 @@
   "devDependencies": {
     "@stryker-mutator/tap-runner": "^8.7.1",
     "@types/node": "^22.10.5",
-    "prettier": "^3.4.2"
+    "@types/sinon": "^17.0.3",
+    "prettier": "^3.4.2",
+    "sinon": "^19.0.2"
   }
 }
