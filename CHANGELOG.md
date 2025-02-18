@@ -1,3 +1,12 @@
+## [0.1.1](https://github.com/nicojs/type-annotationify/compare/v0.1.0...v0.1.1) (2025-02-18)
+
+
+### Features
+
+* **cli:** add `--explicit-property-types` option for explicit type annotations ([#52](https://github.com/nicojs/type-annotationify/issues/52)) ([fd46be6](https://github.com/nicojs/type-annotationify/commit/fd46be6ade60dafc80cc69a3cb5081bf27fc7224))
+
+
+
 # 0.1.0 (2025-02-15)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "type-annotationify",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Migrate full-fledged TypeScript code to type-annotated TypeScript code that is compatible with the type annotation proposal as well as NodeJS's --experimental-strip-types",
   "license": "Apache-2.0",
   "author": "nicojs",
