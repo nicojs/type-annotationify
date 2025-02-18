@@ -25,10 +25,12 @@ export interface TransformResult {
 export interface TransformOptions {
   enumNamespaceDeclaration: boolean;
   relativeImportExtensions: boolean;
+  explicitPropertyTypes: boolean;
 }
 
 export const DEFAULT_OPTIONS: Readonly<TransformOptions> = Object.freeze({
   enumNamespaceDeclaration: true,
+  explicitPropertyTypes: false,
   relativeImportExtensions: false,
 });
 
@@ -46,7 +48,7 @@ export function transform(
   function transformNode(node: ts.Node): ts.Node | ts.Node[] {
     let resultingNode: ts.Node | ts.Node[] = node;
     if (ts.isClassDeclaration(node)) {
-      const result = transformConstructorParameters(node);
+      const result = transformConstructorParameters(node, options);
       if (result.changed) {
         report.classConstructors++;
       }

@@ -53,9 +53,13 @@ This will convert all the TypeScript files that match the pattern to type-annota
 
 Don't write the changes to disk, but print changes that would have been made to the console.
 
+### `--explicit-property-types`
+
+Add type annotations to properties. See [Parameter Properties](#parameter-properties) for more info.
+
 ### `--help`
 
-Print the help message.
+Print the help message and exit.
 
 ### `--no-enum-namespace-declaration`
 
@@ -98,6 +102,17 @@ class Foo {
 
 Type-annotationifies as:
 
+<table>
+<thread>
+<tr>
+<th>Default</th>
+<th><code>--explicit-property-types</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+
 ```ts
 class Foo {
   public bar;
@@ -111,13 +126,33 @@ class Foo {
 }
 ```
 
+</td><td>
+
+```ts
+class Foo {
+  public bar: string;
+  readonly baz: boolean;
+  protected qux;
+  constructor(bar: string, baz: boolean, qux = 42) {
+    this.bar = bar;
+    this.baz = baz;
+    this.qux = qux;
+  }
+}
+```
+
+</td>
+</tr>
+</tbody>
+</table>
+
 When a `super()` call is present, the assignments in the constructor are moved to below the `super()` call (like in normal TypeScript transpilation).
 
-The property type annotations are left out, as the TypeScript compiler infers them from the constructor assignments. This is better for code maintainability (every type is listed once instead of twice), but does come with some limitations.
+The property type annotations are left out by default, as the TypeScript compiler infers them from the constructor assignments. This is better for code maintainability (every type is listed once instead of twice), but does come with some limitations. However, if you want to be explicit, you can enable the `--explicit-property-types` option.
 
 #### Parameter property transformation limitations
 
-1.  It assumes `noImplicitAny` is enabled. Without it, the inference from the assignments in the constructor doesn't work.
+1.  It assumes `noImplicitAny` is enabled. Without it, the inference from the assignments in the constructor doesn't work. You can opt-out of this by enabling the `--explicit-property-types` option.
 2.  When you use the property as an assertion function you will get an error. For example:
     ```ts
     interface Options {
@@ -141,6 +176,7 @@ The property type annotations are left out, as the TypeScript compiler infers th
     - private readonly validator;
     + private readonly validator: OptionsValidator;
     ```
+    Or enable the `--explicit-property-types` option.
 
 ### Enum transformations
 

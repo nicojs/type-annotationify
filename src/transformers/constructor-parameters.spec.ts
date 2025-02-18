@@ -17,6 +17,21 @@ describe(transformConstructorParameters.name, async () => {
     );
   });
 
+  await it('should add the property type when `explicitPropertyTypes` is set', async () => {
+    await scenario(
+      `class Iban {
+            constructor(public bankCode: string) {}
+            }`,
+      `class Iban {
+            public bankCode: string;
+            constructor(bankCode: string) {
+              this.bankCode = bankCode;
+            }
+    }`,
+      { explicitPropertyTypes: true },
+    );
+  });
+
   await it('should transform a parameter property deeper in the AST', async () => {
     await scenario(
       `
