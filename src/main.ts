@@ -3,20 +3,18 @@ import {
   transform,
   print,
   TransformOptions,
+  DEFAULT_OPTIONS,
 } from "type-annotationify/dist/transform.js";
 const input = document.getElementById("input") as HTMLInputElement;
 const output = document.getElementById("output") as HTMLTextAreaElement;
 const form = document.querySelector("form")!;
-const options: TransformOptions = {
-  enumNamespaceDeclaration: true,
-  relativeImportExtensions: true,
-};
+const options: TransformOptions = { ...DEFAULT_OPTIONS };
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const code = input.value;
   const parsed = parse("ts.ts", code);
-  const { changed, node } = transform(parsed, options);
-  if (changed) {
+  const { report, node } = transform(parsed, options);
+  if (report.changed) {
     const printed = print(node);
     output.value = printed;
   } else {
@@ -116,5 +114,6 @@ bindDemo("general-demo", generalDemo);
 bindDemo("namespaces-demo", namespacesDemo);
 bindDemo("classes-demo", classDemo);
 bindDemo("import-demo", importDemo);
+bindOption("explicitPropertyTypes", "explicitPropertyTypes", false);
 bindOption("noEnumNamespaceDeclaration", "enumNamespaceDeclaration", true);
 bindOption("relativeImportExtensions", "relativeImportExtensions", false);
