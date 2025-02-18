@@ -53,13 +53,13 @@ This will convert all the TypeScript files that match the pattern to type-annota
 
 Don't write the changes to disk, but print changes that would have been made to the console.
 
-### `--help`
-
-Print the help message.
-
 ### `--explicit-property-types`
 
 Add type annotations to properties. See [Parameter Properties](#parameter-properties) for more info.
+
+### `--help`
+
+Print the help message and exit.
 
 ### `--no-enum-namespace-declaration`
 
