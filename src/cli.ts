@@ -32,6 +32,7 @@ export async function runTypeAnnotationifyCli(
     args,
     options: {
       'enum-namespace-declaration': { type: 'boolean', default: true },
+      'explicit-property-types': { type: 'boolean', default: false },
       'relative-import-extensions': { type: 'boolean', default: false },
       dry: { type: 'boolean', default: false },
       help: { type: 'boolean', short: 'h' },
@@ -46,6 +47,7 @@ export async function runTypeAnnotationifyCli(
 
     Options:
       --dry                            Don't write the transformed files to disk, perform a test run only.
+      --explicit-property-types        Add an explicit type annotations to property declarations.
       --no-enum-namespace-declaration  Don't emit "declare namespace..." when converting enum declarations.
       --relative-import-extensions     Convert relative imports from .js to .ts
       -h, --help                       Display this help message
@@ -66,6 +68,7 @@ export async function runTypeAnnotationifyCli(
   const transformOptions: TransformOptions = {
     enumNamespaceDeclaration: options['enum-namespace-declaration'],
     relativeImportExtensions: options['relative-import-extensions'],
+    explicitPropertyTypes: options['explicit-property-types'],
   };
   for await (const file of glob(patterns, {
     exclude: (fileName) => fileName === 'node_modules',

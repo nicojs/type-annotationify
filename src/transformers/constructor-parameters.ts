@@ -1,8 +1,10 @@
 import ts from 'typescript';
 import type { TransformerResult } from './transformer-result.ts';
+import type { TransformOptions } from '../transform.ts';
 
 export function transformConstructorParameters(
   clazz: ts.ClassDeclaration,
+  options: Pick<TransformOptions, 'explicitPropertyTypes'>,
 ): TransformerResult<ts.ClassDeclaration> {
   const constructor = clazz.members.find((member) =>
     ts.isConstructorDeclaration(member),
@@ -28,7 +30,7 @@ export function transformConstructorParameters(
       clazz.typeParameters,
       clazz.heritageClauses,
       [
-        ...toClassProperties(constructorParameterProperties),
+        ...toClassProperties(constructorParameterProperties, options),
         ...clazz.members.map((member) => {
           if (!ts.isConstructorDeclaration(member)) {
             return member;
@@ -77,13 +79,16 @@ function toPropertyInitializers(
     );
   });
 }
-function toClassProperties(parameterProperties: ts.ParameterDeclaration[]) {
+function toClassProperties(
+  parameterProperties: ts.ParameterDeclaration[],
+  options: Pick<TransformOptions, 'explicitPropertyTypes'>,
+) {
   return parameterProperties.map((param) => {
     return ts.factory.createPropertyDeclaration(
       param.modifiers,
       (param.name as ts.Identifier).text,
       param.questionToken,
-      /* type */ undefined,
+      /* type */ options.explicitPropertyTypes ? param.type : undefined,
       /* initializer */ undefined,
     );
   });

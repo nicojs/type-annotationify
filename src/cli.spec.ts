@@ -161,7 +161,7 @@ describe(runTypeAnnotationifyCli.name, async () => {
     });
   });
 
-  await it.only('should only report files when `--dry` is set', async () => {
+  await it('should only report files when `--dry` is set', async () => {
     context.glob.returns(new AsyncFileIterable(['src/foo.ts']));
     context.readFile.resolves('const foo = <string>JSON.parse(`"hello"`);');
     await act(['--dry']);
